@@ -15,7 +15,7 @@ interface Question {
 export default function QuestionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const id = searchParams.get('id');
+  const id = searchParams?.get('id') || '';
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQ, setCurrentQ] = useState(1);
@@ -32,41 +32,16 @@ export default function QuestionsPage() {
     checkValidationAndLoad();
   }, [id, router]);
 
+  // Skip validation check - user came from validation page
   const checkValidationAndLoad = async () => {
-    try {
-      // Check if there's intelligence to validate
-      const intelStatus = await getIntelligenceStatus(id!);
-      if (intelStatus.status === 'completed' && !intelStatus.validated) {
-        // Redirect to validation
-        router.push(`/assess/validation?id=${id}`);
-        return;
-      }
-      // Otherwise load questions
-      loadQuestions();
-    } catch {
-      loadQuestions();
-    }
+    loadQuestions();
   };
 
   const loadQuestions = async () => {
     try {
       const data = await getQuestions();
       setQuestions(data);
-      
-      // Load existing answers
-      const assessment = await getAssessment(id!);
-      if (assessment.answers) {
-        const ans: Record<number, number> = {};
-        Object.entries(assessment.answers).forEach(([k, v]) => {
-          ans[parseInt(k)] = v as number;
-        });
-        setAnswers(ans);
-        
-        // Find first unanswered question
-        const answered = Object.keys(ans).map(k => parseInt(k));
-        const nextQ = questions.find(q => !answered.includes(q.id));
-        if (nextQ) setCurrentQ(nextQ.id);
-      }
+      loadExistingAnswers();
     } catch (err) {
       console.error('Error loading questions:', err);
     } finally {
@@ -74,13 +49,26 @@ export default function QuestionsPage() {
     }
   };
 
+  const loadExistingAnswers = async () => {
+    try {
+      const assessment = await getAssessment(id);
+      if (assessment.answers) {
+        setAnswers(assessment.answers);
+        const answered = Object.keys(assessment.answers).map(k => parseInt(k));
+        const nextQ = questions.find(q => !answered.includes(q.id));
+        if (nextQ) setCurrentQ(nextQ.id);
+      }
+    } catch (err) {
+      console.error('Error loading answers:', err);
+    }
+  };
+
   const handleAnswer = async (answer: number) => {
+    if (!id || saving) return;
     setSaving(true);
     try {
-      await saveAnswer(id!, currentQ, answer);
-      setAnswers({currentQ]: answer ...answers, [ });
-      
-      // Go to next question
+      await saveAnswer(id, currentQ, answer);
+      setAnswers(prev => ({ ...prev, [currentQ]: answer }));
       if (currentQ < 25) {
         setCurrentQ(currentQ + 1);
       }
@@ -92,9 +80,11 @@ export default function QuestionsPage() {
   };
 
   const handleSubmit = async () => {
+    if (!id || submitting) return;
     setSubmitting(true);
+    router.push(`/assess/generating?id=${id}`);
     try {
-      const result = await submitAssessment(id!);
+      await submitAssessment(id);
       router.push(`/report/${id}`);
     } catch (err) {
       console.error('Error submitting:', err);
@@ -102,9 +92,9 @@ export default function QuestionsPage() {
     }
   };
 
-  const currentQuestion = questions.find(q => q.id === currentQ);
   const answeredCount = Object.keys(answers).length;
-  const allAnswered = answeredCount === 25;
+  const allAnswered = answeredCount >= 25;
+  const currentQuestion = questions.find(q => q.id === currentQ);
 
   if (loading) {
     return (
@@ -144,25 +134,22 @@ export default function QuestionsPage() {
         {/* Question Card */}
         {currentQuestion && (
           <div className="bg-white/5 backdrop-blur rounded-2xl p-8 border border-white/10">
-            {/* Dimension Tag */}
             <div className="mb-4">
               <span className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
                 {currentQuestion.dimension_label}
               </span>
             </div>
 
-            {/* Question Text */}
             <h2 className="text-xl text-white font-medium mb-8">
               {currentQuestion.text}
             </h2>
 
-            {/* Options */}
             <div className="space-y-3">
               {(['A', 'B', 'C', 'D'] as const).map((option, idx) => (
                 <button
                   key={option}
                   onClick={() => handleAnswer(idx + 1)}
-                  disabled={saving}
+                  disabled={saving || !id}
                   className={`w-full p-4 text-left rounded-xl border transition-all ${
                     answers[currentQ] === idx + 1
                       ? 'bg-purple-600/30 border-purple-500 text-white'
@@ -177,7 +164,6 @@ export default function QuestionsPage() {
               ))}
             </div>
 
-            {/* Navigation */}
             <div className="mt-8 flex justify-between">
               <button
                 onClick={() => setCurrentQ(Math.max(1, currentQ - 1))}
@@ -198,9 +184,9 @@ export default function QuestionsPage() {
           </div>
         )}
 
-        {/* Submit Section */}
-        {allAnswered && (
-          <div className="mt-8 text-center">
+        {/* Submit Section - Always render but hidden until all answered */}
+        <div className="mt-8">
+          <div className={`text-center ${allAnswered ? 'block' : 'hidden'}`}>
             <button
               onClick={handleSubmit}
               disabled={submitting}
@@ -209,7 +195,12 @@ export default function QuestionsPage() {
               {submitting ? 'Calculating Results...' : 'Submit Assessment →'}
             </button>
           </div>
-        )}
+          {!allAnswered && (
+            <p className="text-center text-purple-400 text-sm">
+              Answer all 25 questions to submit
+            </p>
+          )}
+        </div>
 
         {/* Question Navigator */}
         <div className="mt-8">

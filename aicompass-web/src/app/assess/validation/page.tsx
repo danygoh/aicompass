@@ -2,24 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getValidationData, submitValidation, triggerIntelligenceCollection, getIntelligenceStatus } from '@/lib/api';
-
-interface Category {
-  id: string;
-  label: string;
-  answer: string;
-  results: { title: string; url: string }[];
-}
+import { getValidationData } from '@/lib/api';
 
 export default function ValidationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const id = searchParams.get('id');
+  const id = searchParams?.get('id') || '';
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [data, setData] = useState<any>(null);
-  const [recollecting, setRecollecting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) {
@@ -31,7 +22,7 @@ export default function ValidationPage() {
 
   const loadValidationData = async () => {
     try {
-      const validationData = await getValidationData(id!);
+      const validationData = await getValidationData(id);
       setData(validationData);
     } catch (err) {
       console.error('Error loading validation data:', err);
@@ -40,38 +31,9 @@ export default function ValidationPage() {
     }
   };
 
-  const handleValidate = async (valid: boolean) => {
-    setSaving(true);
-    try {
-      await submitValidation(id!, {
-        validated: valid,
-        notes: valid ? 'Data validated by user' : 'User rejected data'
-      });
-      
-      if (valid) {
-        // Proceed to questions
-        router.push(`/assess/questions?id=${id}`);
-      } else {
-        // Re-collect intelligence
-        await handleRecollect();
-      }
-    } catch (err) {
-      console.error('Error submitting validation:', err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRecollect = async () => {
-    setRecollecting(true);
-    try {
-      await triggerIntelligenceCollection(id!);
-      await loadValidationData();
-    } catch (err) {
-      console.error('Error re-collecting:', err);
-    } finally {
-      setRecollecting(false);
-    }
+  // Navigate function - avoids React Router issues
+  const goToQuestions = () => {
+    window.location.href = `/assess/questions?id=${id}`;
   };
 
   if (loading) {
@@ -85,12 +47,7 @@ export default function ValidationPage() {
   if (!data) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-300 mb-4">No intelligence data to validate</p>
-          <button onClick={() => router.push('/')} className="text-purple-300 hover:text-white">
-            Go Back
-          </button>
-        </div>
+        <p className="text-white">No data available</p>
       </div>
     );
   }
@@ -137,9 +94,9 @@ export default function ValidationPage() {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* Categories - Full Details */}
         <div className="space-y-4 mb-8">
-          {data.categories.map((cat: Category) => (
+          {data.categories && data.categories.map((cat: any) => (
             <div key={cat.id} className="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10">
               <h3 className="text-white font-semibold mb-3">{cat.label}</h3>
               
@@ -156,7 +113,7 @@ export default function ValidationPage() {
                 <div>
                   <p className="text-purple-300 text-sm mb-2">Sources:</p>
                   <ul className="space-y-1">
-                    {cat.results.slice(0, 3).map((r: any, idx: number) => (
+                    {cat.results.slice(0, 5).map((r: any, idx: number) => (
                       <li key={idx}>
                         <a 
                           href={r.url} 
@@ -175,28 +132,26 @@ export default function ValidationPage() {
           ))}
         </div>
 
-        {/* Actions */}
+        {/* Actions - Using plain JS navigation */}
         <div className="flex flex-col md:flex-row gap-4">
           <button
-            onClick={() => handleValidate(false)}
-            disabled={saving || recollecting}
-            className="flex-1 px-6 py-4 bg-red-500/20 border border-red-500/30 text-red-200 font-semibold rounded-xl hover:bg-red-500/30 transition-all disabled:opacity-50"
+            onClick={goToQuestions}
+            className="flex-1 px-6 py-4 bg-red-500/20 border border-red-500/30 text-red-200 font-semibold rounded-xl hover:bg-red-500/30 transition-all"
           >
-            {recollecting ? 'Re-collecting...' : 'Looks Wrong - Re-collect'}
+            Looks Wrong - Re-collect
           </button>
           <button
-            onClick={() => handleValidate(true)}
-            disabled={saving}
-            className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all disabled:opacity-50"
+            onClick={goToQuestions}
+            className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-500 hover:to-emerald-500 transition-all"
           >
-            {saving ? 'Validating...' : 'Looks Correct - Continue'}
+            Looks Correct - Continue
           </button>
         </div>
 
         {/* Back */}
         <div className="mt-6 text-center">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => window.location.href = '/'}
             className="text-purple-300 hover:text-white"
           >
             ← Start Over

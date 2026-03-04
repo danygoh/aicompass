@@ -40,7 +40,8 @@ export default function GeneratingPage() {
     const checkReport = setInterval(async () => {
       try {
         const assessment = await getAssessment(id!);
-        if (assessment.status === 'completed' && assessment.report) {
+        // Report is generated synchronously on submit, so just check status
+        if (assessment.status === 'completed') {
           clearInterval(interval);
           clearInterval(checkReport);
           router.push(`/report/${id}`);

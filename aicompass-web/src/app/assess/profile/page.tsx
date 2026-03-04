@@ -37,20 +37,16 @@ export default function ProfilePage() {
 
     try {
       await saveProfile(id!, formData);
+      setLoading(false);
       
-      // If company name provided, collect intelligence
+      // If company name provided, go to intelligence collection
       if (formData.company_name) {
-        // Trigger intelligence collection in background
-        triggerIntelligenceCollection(id!).catch(console.error);
-      }
-      
-      // Go to validation (or questions if no company)
-      if (formData.company_name) {
-        router.push(`/assess/validation?id=${id}`);
+        router.push(`/assess/intelligence?id=${id}`);
       } else {
         router.push(`/assess/questions?id=${id}`);
       }
     } catch (err) {
+      console.error('Error saving profile:', err);
       setError('Failed to save profile. Please try again.');
       setLoading(false);
     }
@@ -107,7 +103,8 @@ export default function ProfilePage() {
             <div>
               <label className="block text-white font-medium mb-2">Work Email *</label>
               <input
-                type="email"
+                type="text"
+                inputMode="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"

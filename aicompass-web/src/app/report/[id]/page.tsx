@@ -2,21 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getReport, getAssessment } from '@/lib/api';
+import { getReport } from '@/lib/api';
 
 interface Report {
-  header: { name: string; role: string; company: string };
-  score_card: { total_score: number; tier: string; dimensions: any[] };
+  header: { name: string; tier: string; score: number };
   executive_summary: string;
   dimension_deep_dive: any[];
   priority_recommendations: string[];
   next_steps: string[];
 }
 
+// Parse score string like "8/20 (40%)" into { value: 8, percentage: 40 }
+function parseScore(scoreString: string) {
+  const parts = scoreString.split('/');
+  const value = parseInt(parts[0]) || 0;
+  const percentageStr = parts[1]?.split(' ')[0]?.replace('(', '') || '0';
+  const percentage = parseInt(percentageStr) || 0;
+  return { value, percentage };
+}
+
 export default function ReportPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
+  const id = params?.id as string | undefined;
 
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +47,6 @@ export default function ReportPage() {
   };
 
   const getTierColor = (tier: string) => {
-    // Spec colors: Beginner=#FDECEA, Developing=#FFF3E0, Intermediate=#E8F5E9, Advanced=#E3EBF5
     switch (tier) {
       case 'Beginner': return 'bg-[#FDECEA] text-red-800 border-red-200';
       case 'Developing': return 'bg-[#FFF3E0] text-amber-800 border-amber-200';
@@ -63,7 +70,7 @@ export default function ReportPage() {
         <div className="text-center">
           <p className="text-red-300 mb-4">{error || 'Report not found'}</p>
           <button onClick={() => router.push('/')} className="text-purple-300 hover:text-white">
-            Start New Assessment →
+            Start New Assessment
           </button>
         </div>
       </div>
@@ -89,20 +96,16 @@ export default function ReportPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <p className="text-purple-200 mb-1">Your Score</p>
-              <div className="text-6xl font-bold text-white">{report.score_card.total_score}</div>
+              <div className="text-6xl font-bold text-white">{report.header.score}</div>
               <p className="text-purple-300 text-sm mt-1">out of 100</p>
             </div>
             <div className="text-center">
-              <span className={`inline-block px-6 py-3 rounded-xl border ${getTierColor(report.score_card.tier)} text-xl font-semibold`}>
-                {report.score_card.tier}
+              <span className={`inline-block px-6 py-3 rounded-xl border ${getTierColor(report.header.tier)} text-xl font-semibold`}>
+                {report.header.tier}
               </span>
             </div>
             <div className="text-right">
               <p className="text-white font-medium">{report.header.name}</p>
-              <p className="text-purple-300 text-sm">{report.header.role}</p>
-              {report.header.company && (
-                <p className="text-purple-400 text-sm">{report.header.company}</p>
-              )}
             </div>
           </div>
         </div>
@@ -110,30 +113,31 @@ export default function ReportPage() {
         {/* Executive Summary */}
         <div className="bg-white/5 backdrop-blur rounded-2xl p-8 border border-white/10 mb-8">
           <h2 className="text-xl font-semibold text-white mb-4">Executive Summary</h2>
-          <p className="text-purple-200 leading-relaxed">
-            {report.executive_summary}
-          </p>
+          <p className="text-purple-200 leading-relaxed">{report.executive_summary}</p>
         </div>
 
         {/* Dimension Scores */}
         <div className="bg-white/5 backdrop-blur rounded-2xl p-8 border border-white/10 mb-8">
           <h2 className="text-xl font-semibold text-white mb-6">Dimension Breakdown</h2>
           <div className="space-y-4">
-            {report.dimension_deep_dive.map((dim) => (
-              <div key={dim.dimension} className="flex items-center gap-4">
-                <div className="w-24 text-purple-200 text-sm font-medium">{dim.label}</div>
-                <div className="flex-1 h-4 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-500"
-                    style={{ width: `${dim.percentage}%` }}
-                  />
+            {report.dimension_deep_dive.map((dim) => {
+              const parsed = parseScore(dim.score);
+              return (
+                <div key={dim.dimension} className="flex items-center gap-4">
+                  <div className="w-32 text-purple-200 text-sm font-medium">{dim.dimension}</div>
+                  <div className="flex-1 h-4 bg-white/10 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-500"
+                      style={{ width: `${parsed.percentage}%` }}
+                    />
+                  </div>
+                  <div className="w-16 text-right">
+                    <span className="text-white font-semibold">{parsed.value}</span>
+                    <span className="text-purple-400 text-sm">/20</span>
+                  </div>
                 </div>
-                <div className="w-16 text-right">
-                  <span className="text-white font-semibold">{dim.score}</span>
-                  <span className="text-purple-400 text-sm">/20</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

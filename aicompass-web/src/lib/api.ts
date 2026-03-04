@@ -1,5 +1,5 @@
 // API client for AI Compass
-const API_BASE = 'http://localhost:9001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9001/api';
 
 export async function startAssessment() {
   const res = await fetch(`${API_BASE}/assessment/start`, {

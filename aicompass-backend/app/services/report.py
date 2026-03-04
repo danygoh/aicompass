@@ -10,9 +10,12 @@ def generate_ai_report(assessment_data: dict) -> dict:
     
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     
-    # Build the prompt with assessment data
-    dimensions = assessment_data['dimensions']
-    sorted_dims = sorted(dimensions, key=lambda x: x['score'])
+    # Defensive: ensure dimensions exists
+    dimensions = assessment_data.get('dimensions', [])
+    if not dimensions:
+        return generate_fallback_report(assessment_data)
+    
+    sorted_dims = sorted(dimensions, key=lambda x: x.get('score', 0))
     
     strongest = sorted_dims[-1]['label'] if sorted_dims else "N/A"
     weakest = sorted_dims[0]['label'] if sorted_dims else "N/A"
@@ -115,8 +118,16 @@ Return ONLY valid JSON, no markdown formatting."""
 
 def generate_fallback_report(assessment_data: dict) -> dict:
     """Generate a basic report if Claude fails"""
-    dimensions = assessment_data['dimensions']
-    sorted_dims = sorted(dimensions, key=lambda x: x['score'])
+    dimensions = assessment_data.get('dimensions', [])
+    if not dimensions:
+        dimensions = [
+            {"dimension": "D1", "label": "AI Literacy", "score": 0},
+            {"dimension": "D2", "label": "Data Readiness", "score": 0},
+            {"dimension": "D3", "label": "Workflow Integration", "score": 0},
+            {"dimension": "D4", "label": "Governance & Risk", "score": 0},
+            {"dimension": "D5", "label": "Strategic Alignment", "score": 0},
+        ]
+    sorted_dims = sorted(dimensions, key=lambda x: x.get('score', 0))
     
     return {
         "header": {
