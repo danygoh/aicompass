@@ -109,3 +109,36 @@ aicompass/
 
 **AI Native Foundation** — the parent brand for this product.
 
+
+---
+
+## Lessons Learned (March 2025)
+
+### Development Best Practices
+
+1. **Always analyze first** - Don't rush to fix. Understand the root cause before applying changes.
+
+2. **Test the full flow** - Individual parts may work, but the end-to-end flow reveals issues.
+
+3. **Don't break existing features** - Quick fixes to one area can break another. Always verify other parts still work.
+
+4. **Next.js 16 specifics**:
+   - `useParams()` in client components works fine (no need for async/await)
+   - Turbopack has issues with regex containing escaped characters inside JSX maps - use string parsing instead
+
+5. **Frontend/backend data mismatch** - Always verify what the backend returns vs what the frontend expects.
+
+6. **Database connections drop** - Neon DB SSL connections can drop; may need to restart backend.
+
+7. **Commit frequently** - Small, tested commits are easier to track and rollback if needed.
+
+### Common Issues & Solutions
+
+| Issue | Solution |
+|-------|----------|
+| "Rendered more hooks than during previous render" | Don't use conditional rendering with hooks; use CSS classes instead |
+| "Unterminated regexp literal" in turbopack | Use string parsing instead of regex with escaped chars |
+| Validation page button not navigating | Use `window.location.href` instead of React Router |
+| Generating page stuck | Check status only, not `assessment.report` field |
+| Neon DB connection dropped | Restart backend |
+
