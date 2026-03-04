@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Readiness Assessment — Nexus FrontierTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void: #080b10;
+  --deep: #0e1420;
+  --surface: #141c2a;
+  --elevated: #1c2639;
+  --border: #2a3448;
+  --border-bright: #3d4f6e;
+  --text: #e8ecf4;
+  --muted: #6b7a96;
+  --soft: #4a5670;
+  --gold: #d4a843;
+  --gold-dim: rgba(212,168,67,0.15);
+  --gold-glow: rgba(212,168,67,0.08);
+  --teal: #4ecdc4;
+  --teal-dim: rgba(78,205,196,0.12);
+  --red: #e07a5f;
+  --green: #6bcb77;
+  --amber: #f4b942;
+  --r: 6px;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--void);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── SCREEN SYSTEM ── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+
+/* ── GLOW ORBS ── */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb-1 { width: 500px; height: 500px; background: rgba(212,168,67,0.06); top: -200px; right: -100px; }
+.orb-2 { width: 400px; height: 400px; background: rgba(78,205,196,0.05); bottom: -100px; left: -100px; }
+
+/* ── NAV ── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 40px;
+  background: rgba(8,11,16,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.9;
+}
+.nav-right {
+  display: flex; align-items: center; gap: 16px;
+}
+.nav-user {
+  font-size: 13px; color: var(--muted);
+  font-family: var(--font-mono);
+  display: none;
+}
+.nav-user.visible { display: block; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 28px;
+  border-radius: var(--r);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.01em;
+}
+.btn-gold {
+  background: var(--gold);
+  color: var(--void);
+}
+.btn-gold:hover { background: #e0b54a; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(212,168,67,0.3); }
+.btn-gold:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-outline {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border-bright);
+}
+.btn-outline:hover { color: var(--text); border-color: var(--soft); }
+.btn-outline:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 10px 20px;
+  font-size: 13px;
+}
+.btn-ghost:hover { color: var(--text); }
+
+/* ── FORMS ── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field-input {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 14px 18px;
+  transition: all 0.2s;
+  outline: none;
+  width: 100%;
+}
+.field-input::placeholder { color: var(--soft); }
+.field-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+.field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a96' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px;
+}
+.card-elevated {
+  background: var(--elevated);
+  border: 1px solid var(--border-bright);
+}
+
+/* ── TAGS / CHIPS ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid;
+}
+.tag-gold { color: var(--gold); background: var(--gold-dim); border-color: rgba(212,168,67,0.3); }
+.tag-teal { color: var(--teal); background: var(--teal-dim); border-color: rgba(78,205,196,0.3); }
+.tag-muted { color: var(--muted); background: rgba(107,122,150,0.1); border-color: var(--border); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes pulse { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.anim-up { animation: fadeUp 0.4s ease forwards; }
+.anim-in { animation: fadeIn 0.3s ease forwards; }
+
+/* ── SKELETON ── */
+.skel {
+  background: linear-gradient(90deg, var(--elevated) 25%, var(--border) 50%, var(--elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+/* ===========================
+   SCREEN 1: LANDING
+   =========================== */
+#landing {
+  align-items: center;
+  justify-content: center;
+  padding: 100px 24px 60px;
+  position: relative;
+}
+.landing-inner {
+  max-width: 680px;
+  width: 100%;
+  text-align: center;
+  position: relative; z-index: 1;
+}
+.landing-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.landing-kicker::before,
+.landing-kicker::after {
+  content: '';
+  display: block;
+  width: 32px; height: 1px;
+  background: rgba(212,168,67,0.4);
+}
+.landing-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 7vw, 80px);
+  font-weight: 700;
+  line-height: 1.0;
+  color: var(--text);
+  margin-bottom: 20px;
+  letter-spacing: -0.01em;
+}
+.landing-h1 em {
+  font-style: italic;
+  color: var(--gold);
+}
+.landing-sub {
+  font-size: 17px;
+  color: var(--muted);
+  font-weight: 300;
+  max-width: 480px;
+  margin: 0 auto 48px;
+  line-height: 1.7;
+}
+.landing-stats {
+  display: flex;
+  gap: 0;
+  justify-content: center;
+  margin-bottom: 52px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.stat {
+  flex: 1;
+  padding: 20px 16px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.stat:last-child { border-right: none; }
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--gold);
+  display: block;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+}
+.landing-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ===========================
+   SCREEN 2: ONBOARDING
+   =========================== */
+#onboarding {
+  padding: 100px 24px 60px;
+  align-items: center;
+}
+.onboard-wrap {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative; z-index: 1;
+}
+.onboard-step-indicator {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 40px;
+  justify-content: center;
+}
+.step-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border-bright);
+  transition: all 0.3s;
+}
+.step-dot.active { background: var(--gold); width: 24px; border-radius: 3px; }
+.step-dot.done { background: var(--teal); }
+
+.onboard-panel { display: none; }
+.onboard-panel.active { display: block; animation: fadeUp 0.35s ease; }
+
+.onboard-title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.15;
+}
+.onboard-desc {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+.form-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.linkedin-input-wrap {
+  position: relative;
+}
+.linkedin-icon {
+  position: absolute;
+  left: 16px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.linkedin-input-wrap .field-input {
+  padding-left: 48px;
+}
+
+/* PROFILE ENRICHMENT */
+.enrichment-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.enrichment-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.enrichment-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: pulse 1.5s infinite;
+}
+.enrichment-status-dot.done { background: var(--green); animation: none; }
+.enrichment-body {
+  padding: 20px 24px;
+}
+.enrichment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.enrichment-row:last-child { border-bottom: none; }
+.enrichment-key {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.enrichment-val {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  text-align: right;
+  max-width: 220px;
+}
+.enrichment-val.loading {
+  width: 120px; height: 14px;
+}
+
+/* ===========================
+   SCREEN 3: ASSESSMENT
+   =========================== */
+#assessment {
+  padding: 80px 0 0;
+}
+.assess-layout {
+  display: flex;
+  height: calc(100vh - 80px);
+}
+.assess-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 32px 0;
+  overflow-y: auto;
+  position: sticky;
+  top: 80px;
+  height: calc(100vh - 80px);
+}
+.sidebar-section {
+  padding: 0 24px;
+  margin-bottom: 32px;
+}
+.sidebar-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+.sidebar-profile {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--elevated);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin: 0 24px 24px;
+}
+.sidebar-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  border: 1px solid rgba(212,168,67,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--gold);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.sidebar-user-info { min-width: 0; }
+.sidebar-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-role { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dim-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  cursor: default;
+  transition: all 0.2s;
+}
+.dim-nav-item.current { background: var(--gold-dim); }
+.dim-nav-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  background: var(--elevated);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.dim-nav-item.current .dim-nav-icon { background: var(--gold); }
+.dim-nav-text { font-size: 13px; font-weight: 500; }
+.dim-nav-item.done .dim-nav-text { color: var(--muted); }
+.dim-nav-item.current .dim-nav-text { color: var(--gold); }
+.dim-nav-check {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--teal);
+  display: none;
+}
+.dim-nav-item.done .dim-nav-check { display: block; }
+
+.sidebar-progress-wrap {
+  padding: 0 24px;
+}
+.sidebar-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  margin-bottom: 8px;
+}
+.sidebar-progress-track {
+  height: 4px;
+  background: var(--elevated);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.sidebar-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), #e8c46a);
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+
+.assess-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+}
+.q-header {
+  margin-bottom: 36px;
+}
+.q-dim-tag {
+  margin-bottom: 16px;
+}
+.q-text {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+  max-width: 600px;
+}
+.q-context {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--gold-dim);
+  border: 1px solid rgba(212,168,67,0.15);
+  border-radius: 6px;
+  padding: 10px 14px;
+  max-width: 560px;
+  display: none;
+  font-style: italic;
+}
+.q-context.visible { display: block; }
+
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 620px;
+  margin-bottom: 40px;
+}
+.opt-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  width: 100%;
+  font-family: var(--font-body);
+  color: var(--text);
+}
+.opt-btn:hover { border-color: var(--border-bright); background: var(--elevated); }
+.opt-btn.selected { border-color: var(--gold); background: var(--gold-dim); }
+.opt-badge {
+  width: 28px; height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--elevated);
+  border: 1px solid var(--border-bright);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  transition: all 0.15s;
+  margin-top: 2px;
+}
+.opt-btn.selected .opt-badge { background: var(--gold); border-color: var(--gold); color: var(--void); }
+.opt-text { font-size: 14px; line-height: 1.55; font-weight: 400; }
+
+.assess-nav-bar {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.q-counter {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--soft);
+}
+
+@media (max-width: 768px) {
+  .assess-sidebar { display: none; }
+  .assess-main { padding: 28px 20px; }
+}
+
+/* ===========================
+   SCREEN 4: GENERATING
+   =========================== */
+#generating {
+  align-items: center;
+  justify-content: center;
+  padding: 100px 24px;
+  text-align: center;
+}
+.gen-inner { max-width: 480px; width: 100%; position: relative; z-index: 1; }
+.gen-orb {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold), var(--teal), var(--gold));
+  margin: 0 auto 40px;
+  position: relative;
+  animation: spin 3s linear infinite;
+  filter: blur(1px);
+}
+.gen-orb::after {
+  content: '';
+  position: absolute; inset: 6px;
+  border-radius: 50%;
+  background: var(--void);
+}
+.gen-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.gen-desc { font-size: 14px; color: var(--muted); margin-bottom: 40px; }
+.gen-steps {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gen-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  transition: all 0.4s;
+}
+.gen-step.active { border-color: var(--gold); color: var(--text); background: var(--gold-dim); }
+.gen-step.done { border-color: rgba(107,203,119,0.3); color: var(--muted); background: rgba(107,203,119,0.05); }
+.gen-step-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  background: var(--elevated);
+  border: 1px solid var(--border-bright);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  color: var(--soft);
+}
+.gen-step.active .gen-step-icon { background: var(--gold); color: var(--void); border-color: var(--gold); }
+.gen-step.done .gen-step-icon { background: rgba(107,203,119,0.15); color: var(--green); border-color: rgba(107,203,119,0.3); }
+
+/* ===========================
+   SCREEN 5: REPORT
+   =========================== */
+#report {
+  padding-top: 80px;
+}
+.report-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 52px 32px 80px;
+  position: relative; z-index: 1;
+}
+
+/* Report hero */
+.report-hero {
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+  margin-bottom: 52px;
+  flex-wrap: wrap;
+}
+.report-hero-left { flex: 1; min-width: 260px; }
+.report-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.report-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 700;
+  line-height: 1.0;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.report-h1 em { color: var(--gold); font-style: italic; }
+.report-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.report-meta-item {
+  font-size: 12px;
+  color: var(--soft);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Score ring */
+.score-ring-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.score-ring-svg { width: 160px; height: 160px; }
+.score-ring-bg { fill: none; stroke: var(--elevated); stroke-width: 10; }
+.score-ring-fill {
+  fill: none; stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 408;
+  stroke-dashoffset: 408;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 2s cubic-bezier(0.25,0.8,0.25,1);
+}
+.score-ring-text {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.score-ring-num {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+.score-ring-denom {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--soft);
+}
+
+/* Tier banner */
+.tier-banner {
+  border-radius: 10px;
+  padding: 28px 32px;
+  margin-bottom: 40px;
+  border: 1px solid;
+  position: relative;
+  overflow: hidden;
+}
+.tier-banner-tier {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.tier-banner-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.tier-banner-desc {
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 640px;
+}
+
+/* Personalised narrative */
+.narrative-section {
+  margin-bottom: 48px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+}
+.narrative-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px 32px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: rgba(232,236,244,0.85);
+  white-space: pre-wrap;
+}
+.narrative-card strong { color: var(--text); }
+
+/* Dim breakdown */
+.dim-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.dim-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+.dim-card:hover { border-color: var(--border-bright); }
+.dim-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.dim-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 140px;
+  line-height: 1.3;
+}
+.dim-card-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+.dim-bar-track {
+  height: 5px;
+  background: var(--elevated);
+  border-radius: 100px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.dim-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 1.5s cubic-bezier(0.25,0.8,0.25,1);
+  width: 0%;
+}
+.dim-tier-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.dim-ai-insight {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Radar */
+.radar-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+/* Reco section */
+.reco-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.reco-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+.reco-num {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--gold);
+  opacity: 0.3;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.reco-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.reco-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* Nexus offer */
+.offer-card {
+  background: linear-gradient(135deg, var(--deep) 0%, #0d1520 100%);
+  border: 1px solid rgba(212,168,67,0.2);
+  border-radius: 12px;
+  padding: 44px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+.offer-card::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(212,168,67,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.offer-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.offer-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.offer-desc {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 480px;
+  margin: 0 auto 28px;
+  line-height: 1.65;
+}
+.offer-btns {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+}
+
+/* Tier color system */
+.tier-bg-beginner { background: rgba(224,122,95,0.08); border-color: rgba(224,122,95,0.25); }
+.tier-color-beginner { color: #e07a5f; }
+.tier-bar-beginner { background: #e07a5f; }
+.tier-ring-beginner { stroke: #e07a5f; }
+.tier-score-beginner { background: rgba(224,122,95,0.15); color: #e07a5f; }
+
+.tier-bg-developing { background: rgba(244,185,66,0.08); border-color: rgba(244,185,66,0.25); }
+.tier-color-developing { color: #f4b942; }
+.tier-bar-developing { background: #f4b942; }
+.tier-ring-developing { stroke: #f4b942; }
+.tier-score-developing { background: rgba(244,185,66,0.15); color: #f4b942; }
+
+.tier-bg-intermediate { background: rgba(78,205,196,0.08); border-color: rgba(78,205,196,0.25); }
+.tier-color-intermediate { color: var(--teal); }
+.tier-bar-intermediate { background: var(--teal); }
+.tier-ring-intermediate { stroke: var(--teal); }
+.tier-score-intermediate { background: rgba(78,205,196,0.15); color: var(--teal); }
+
+.tier-bg-advanced { background: rgba(107,203,119,0.08); border-color: rgba(107,203,119,0.25); }
+.tier-color-advanced { color: var(--green); }
+.tier-bar-advanced { background: var(--green); }
+.tier-ring-advanced { stroke: var(--green); }
+.tier-score-advanced { background: rgba(107,203,119,0.15); color: var(--green); }
+
+@media print {
+  .nav, .offer-card, .nav-right { display: none !important; }
+  body { background: white; color: #111; }
+  .report-hero, .narrative-card, .dim-card { border-color: #ddd !important; background: #fafafa !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- ── GLOBAL NAV ── -->
+<nav class="nav">
+  <div class="nav-logo">Nexus · AI Readiness</div>
+  <div class="nav-right">
+    <span class="nav-user" id="nav-user-display"></span>
+  </div>
+</nav>
+
+<!-- ====================================================
+     SCREEN 1: LANDING
+     ==================================================== -->
+<div id="landing" class="screen active">
+  <div class="landing-inner">
+    <div class="landing-kicker">AI Native Foundation</div>
+    <h1 class="landing-h1">Know Your<br><em>AI Readiness</em></h1>
+    <p class="landing-sub">A personalised diagnostic that maps your AI fluency against your role, industry, and organisation — and delivers a bespoke roadmap for what comes next.</p>
+    <div class="landing-stats">
+      <div class="stat"><span class="stat-num">25</span><span class="stat-label">Questions</span></div>
+      <div class="stat"><span class="stat-num">15'</span><span class="stat-label">Duration</span></div>
+      <div class="stat"><span class="stat-num">5</span><span class="stat-label">Dimensions</span></div>
+    </div>
+    <div class="landing-btns">
+      <button class="btn btn-gold" onclick="goTo('onboarding')">Begin Assessment →</button>
+      <button class="btn btn-outline" onclick="alert('Login coming soon')">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================
+     SCREEN 2: ONBOARDING (3 panels)
+     ==================================================== -->
+<div id="onboarding" class="screen">
+  <div class="onboard-wrap">
+    <div class="onboard-step-indicator">
+      <div class="step-dot active" id="sdot-0"></div>
+      <div class="step-dot" id="sdot-1"></div>
+      <div class="step-dot" id="sdot-2"></div>
+    </div>
+
+    <!-- Panel 0: Basic info -->
+    <div class="onboard-panel active" id="opanel-0">
+      <h2 class="onboard-title">Welcome.<br>Let's start with you.</h2>
+      <p class="onboard-desc">Your profile lets us personalise every question and recommendation specifically to your context.</p>
+      <div class="form-grid">
+        <div class="form-grid form-grid-2">
+          <div class="field-group">
+            <label class="field-label">First Name</label>
+            <input class="field-input" id="f-firstname" type="text" placeholder="Sarah">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Last Name</label>
+            <input class="field-input" id="f-lastname" type="text" placeholder="Chen">
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Work Email</label>
+          <input class="field-input" id="f-email" type="email" placeholder="sarah@company.com">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Job Title</label>
+          <input class="field-input" id="f-jobtitle" type="text" placeholder="Chief Risk Officer">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Company</label>
+          <input class="field-input" id="f-company" type="text" placeholder="DBS Bank">
+        </div>
+      </div>
+      <div style="margin-top:28px; display:flex; justify-content:flex-end">
+        <button class="btn btn-gold" onclick="onboardNext(0)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Panel 1: Role context -->
+    <div class="onboard-panel" id="opanel-1">
+      <h2 class="onboard-title">Your role<br>&amp; industry.</h2>
+      <p class="onboard-desc">This helps us calibrate questions to your specific context — a legal professional faces different AI challenges than an engineer.</p>
+      <div class="form-grid">
+        <div class="field-group">
+          <label class="field-label">Industry</label>
+          <select class="field-input field-select" id="f-industry">
+            <option value="">Select your industry</option>
+            <option>Banking & Financial Services</option>
+            <option>Asset Management & Wealth</option>
+            <option>Insurance</option>
+            <option>Capital Markets</option>
+            <option>Consulting & Professional Services</option>
+            <option>Healthcare & Life Sciences</option>
+            <option>Legal</option>
+            <option>Technology</option>
+            <option>Real Estate</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Seniority Level</label>
+          <select class="field-input field-select" id="f-seniority">
+            <option value="">Select level</option>
+            <option>Individual Contributor</option>
+            <option>Manager / Team Lead</option>
+            <option>Director / VP</option>
+            <option>C-Suite / Partner</option>
+            <option>Board Level</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Company Size</label>
+          <select class="field-input field-select" id="f-companysize">
+            <option value="">Select size</option>
+            <option>1–50 employees</option>
+            <option>51–200 employees</option>
+            <option>201–1,000 employees</option>
+            <option>1,001–10,000 employees</option>
+            <option>10,000+ employees</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Primary Function</label>
+          <select class="field-input field-select" id="f-function">
+            <option value="">Select function</option>
+            <option>Executive / Strategy</option>
+            <option>Technology / Engineering</option>
+            <option>Operations / Process</option>
+            <option>Compliance / Risk / Legal</option>
+            <option>Finance / Accounting</option>
+            <option>Sales / Business Development</option>
+            <option>Marketing</option>
+            <option>HR / People</option>
+            <option>Data / Analytics</option>
+            <option>Product Management</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:28px; display:flex; justify-content:space-between; align-items:center">
+        <button class="btn btn-ghost" onclick="onboardBack(1)">← Back</button>
+        <button class="btn btn-gold" onclick="onboardNext(1)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Panel 2: LinkedIn + enrichment -->
+    <div class="onboard-panel" id="opanel-2">
+      <h2 class="onboard-title">Profile<br>enrichment.</h2>
+      <p class="onboard-desc">Optionally provide your LinkedIn URL. We'll surface publicly available context to personalise your assessment questions and report.</p>
+      <div class="form-grid" style="margin-bottom:24px">
+        <div class="field-group">
+          <label class="field-label">LinkedIn URL <span style="color:var(--soft); font-weight:400; text-transform:none; letter-spacing:0; font-size:11px">(optional)</span></label>
+          <div class="linkedin-input-wrap">
+            <span class="linkedin-icon">in/</span>
+            <input class="field-input" id="f-linkedin" type="text" placeholder="yourname">
+          </div>
+        </div>
+      </div>
+
+      <div class="enrichment-card" id="enrich-card" style="display:none">
+        <div class="enrichment-header">
+          <div class="enrichment-status-dot" id="enrich-dot"></div>
+          <span style="font-size:13px; font-weight:600; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.06em; color:var(--muted)" id="enrich-status-text">Gathering profile data…</span>
+        </div>
+        <div class="enrichment-body" id="enrich-body">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px">
+        <button class="btn btn-ghost" onclick="onboardBack(2)">← Back</button>
+        <div style="display:flex; gap:10px">
+          <button class="btn btn-outline" onclick="enrichAndProceed(false)">Skip enrichment</button>
+          <button class="btn btn-gold" id="btn-enrich-go" onclick="enrichAndProceed(true)">Enrich &amp; Begin →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ====================================================
+     SCREEN 3: ASSESSMENT
+     ==================================================== -->
+<div id="assessment" class="screen">
+  <div class="assess-layout">
+    <aside class="assess-sidebar">
+      <div class="sidebar-profile">
+        <div class="sidebar-avatar" id="sb-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-name" id="sb-name">—</div>
+          <div class="sidebar-role" id="sb-role">—</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Dimensions</div>
+      </div>
+      <div id="dim-nav-list"></div>
+      <div style="margin-top:auto; padding:16px 0 0">
+        <div class="sidebar-progress-wrap">
+          <div class="sidebar-progress-label">
+            <span>Progress</span>
+            <span id="sb-progress-pct">0%</span>
+          </div>
+          <div class="sidebar-progress-track">
+            <div class="sidebar-progress-fill" id="sb-progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="assess-main">
+      <div id="q-container"></div>
+      <div class="assess-nav-bar">
+        <button class="btn btn-outline" id="btn-q-back" onclick="qPrev()" style="font-size:13px; padding:10px 20px">← Back</button>
+        <span class="q-counter" id="q-counter">1 / 25</span>
+        <button class="btn btn-gold" id="btn-q-next" onclick="qNext()" disabled>Next →</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ====================================================
+     SCREEN 4: GENERATING
+     ==================================================== -->
+<div id="generating" class="screen">
+  <div class="gen-inner">
+    <div class="gen-orb"></div>
+    <h2 class="gen-title">Analysing your<br>responses…</h2>
+    <p class="gen-desc">Our AI is cross-referencing your answers with your professional profile to generate a bespoke report.</p>
+    <div class="gen-steps">
+      <div class="gen-step" id="gs-1">
+        <div class="gen-step-icon" id="gi-1">01</div>
+        <span>Processing assessment responses</span>
+      </div>
+      <div class="gen-step" id="gs-2">
+        <div class="gen-step-icon" id="gi-2">02</div>
+        <span>Cross-referencing professional profile</span>
+      </div>
+      <div class="gen-step" id="gs-3">
+        <div class="gen-step-icon" id="gi-3">03</div>
+        <span>Generating personalised insights</span>
+      </div>
+      <div class="gen-step" id="gs-4">
+        <div class="gen-step-icon" id="gi-4">04</div>
+        <span>Building recommendations roadmap</span>
+      </div>
+      <div class="gen-step" id="gs-5">
+        <div class="gen-step-icon" id="gi-5">05</div>
+        <span>Compiling your report</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================
+     SCREEN 5: REPORT
+     ==================================================== -->
+<div id="report" class="screen">
+  <div class="report-wrap" id="report-wrap">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<!-- ====================================================
+     JAVASCRIPT
+     ==================================================== -->
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let profile = {};
+let enrichedData = {};
+let answers = [];
+let currentQ = 0;
+let aiReport = null;
+
+// ─────────────────────────────────────────────
+// QUESTIONS
+// ─────────────────────────────────────────────
+const DIMS = [
+  { id: 'literacy',    name: 'AI Literacy',         icon: '🧠', short: 'Literacy' },
+  { id: 'data',        name: 'Data Readiness',       icon: '🗄️', short: 'Data' },
+  { id: 'workflow',    name: 'Workflow Integration', icon: '⚡', short: 'Workflow' },
+  { id: 'governance',  name: 'Governance & Risk',    icon: '🛡️', short: 'Governance' },
+  { id: 'strategy',    name: 'Strategic Alignment',  icon: '🎯', short: 'Strategy' }
+];
+
+const QUESTIONS = [
+  // AI LITERACY
+  { dim: 0, q: "How would you describe your understanding of how Large Language Models (LLMs) work?",
+    opts: ["I know they're AI tools but not the underlying mechanics","I understand they use training data and generate probabilistic outputs","I can explain tokenisation, context windows, and fine-tuning approaches","I understand transformer architecture, inference trade-offs, and model selection criteria"] },
+  { dim: 0, q: "How confident are you in evaluating the accuracy of AI-generated content?",
+    opts: ["I tend to accept outputs at face value","I do a quick sense-check but rarely verify","I systematically verify against authoritative sources","I apply structured evaluation including hallucination checks and confidence calibration"] },
+  { dim: 0, q: "How practised are you with prompt engineering techniques?",
+    opts: ["I haven't used it","I use basic prompts without much structure","I regularly use role, context, and constraint framing","I design multi-shot, chain-of-thought prompts and evaluate outputs systematically"] },
+  { dim: 0, q: "How well do you understand AI limitations such as hallucinations, bias, and context limits?",
+    opts: ["I believe AI is generally reliable","I'm aware of mistakes but can't explain the causes","I can explain key limitations and apply workarounds","I deeply understand failure modes and design systems to mitigate them"] },
+  { dim: 0, q: "How actively do you track AI developments relevant to your industry?",
+    opts: ["Rarely or never","Occasionally through news articles","Monthly through structured reading or courses","Weekly — I follow research, practitioner content, and experiment regularly"] },
+  // DATA READINESS
+  { dim: 1, q: "How accessible and well-structured is your organisation's data for AI use cases?",
+    opts: ["Data is siloed with no central access","Some data is accessible but inconsistently formatted","We have central repositories with reasonable documentation","Governed data infrastructure with lineage, quality scores, and APIs"] },
+  { dim: 1, q: "How mature is your organisation's data quality management?",
+    opts: ["We don't formally manage data quality","Quality issues are addressed reactively","We have data quality checks and regular audits","Automated data quality pipelines with SLAs and remediation workflows"] },
+  { dim: 1, q: "How well-defined are your data privacy and consent practices for AI applications?",
+    opts: ["This hasn't been considered","We know it's an issue but lack clear policies","GDPR/PDPA-aligned policies exist but AI-specific guidance is lacking","Comprehensive AI-specific data governance frameworks with controls"] },
+  { dim: 1, q: "How effectively does your team use data to drive decisions vs relying on intuition?",
+    opts: ["Mostly intuition — data is rarely consulted","Data is available but doesn't always drive decisions","Data regularly informs decisions with defined processes","Data is the primary driver with real-time dashboards and ML-based forecasting"] },
+  { dim: 1, q: "How prepared is your data infrastructure to feed AI models (clean, labelled, accessible)?",
+    opts: ["Not at all — data is unstructured and inconsistent","Some datasets are clean but there's no systematic approach","Key datasets are clean and documented for AI use","Full data taxonomy optimised for AI consumption across modalities"] },
+  // WORKFLOW INTEGRATION
+  { dim: 2, q: "How extensively are AI tools currently embedded in your daily workflows?",
+    opts: ["I don't use any AI tools","I occasionally use consumer tools (ChatGPT, Copilot)","AI tools are a regular part of specific workflows","AI is deeply integrated across workflows with custom solutions and automations"] },
+  { dim: 2, q: "How does your organisation manage the deployment and approval of new AI tools?",
+    opts: ["No formal process — individuals decide","Ad hoc approvals without standard evaluation","A defined evaluation and pilot process before deployment","Structured AI governance with risk tiering, procurement, and change management"] },
+  { dim: 2, q: "When you encounter a repetitive task, how do you approach potential automation?",
+    opts: ["Complete it manually as normal","Consider automation but rarely act on it","Actively evaluate whether AI can address it","Immediately prototype a solution and measure ROI"] },
+  { dim: 2, q: "How well can your organisation integrate AI outputs into core enterprise systems?",
+    opts: ["No integration capability","AI tools are standalone with manual copy-paste","Built-in AI features in some systems are leveraged","APIs and middleware enable seamless AI-to-system integration"] },
+  { dim: 2, q: "How do you measure the value and ROI of AI tools your team uses?",
+    opts: ["We don't measure this","Tracked informally","Output quality and time savings are measured periodically","Defined KPIs, benchmarks, and regular AI tool performance reviews"] },
+  // GOVERNANCE & RISK
+  { dim: 3, q: "Does your organisation have a formal AI usage policy or acceptable use guidelines?",
+    opts: ["No policy exists","It's on the agenda but not formalised","A policy exists but isn't widely communicated","Comprehensive, regularly reviewed policy with training and enforcement mechanisms"] },
+  { dim: 3, q: "How do you approach explainability for AI-driven decisions in regulated contexts?",
+    opts: ["Explainability hasn't been considered","We recognise it's important but have no framework","Human review of AI outputs is required in regulated contexts","Model cards, audit trails, and explainability tools integrated into AI decision pipelines"] },
+  { dim: 3, q: "How aware is your team of AI-specific risks such as model bias and adversarial inputs?",
+    opts: ["Not aware","Aware in general terms but no formal training","Aware with some informal mitigations","Fully aware with formal risk registers, red-teaming, and mitigation protocols"] },
+  { dim: 3, q: "How do you manage the risk of sensitive data entering third-party AI models?",
+    opts: ["This risk hasn't been addressed","We're cautious but have no formal controls","Classification policies prevent sensitive data from entering AI tools","Tiered data-sensitivity framework with DLP controls and approved AI vendor lists"] },
+  { dim: 3, q: "How ready are your regulated functions (compliance, audit, legal) for AI integration?",
+    opts: ["AI is discouraged in these functions","AI is used informally, not in regulated workflows","Piloting AI in adjacent workflows with compliance oversight","AI embedded in regulated workflows with full audit trails and regulatory approval"] },
+  // STRATEGY
+  { dim: 4, q: "How would you describe senior leadership's stance on AI adoption?",
+    opts: ["Leadership hasn't prioritised AI","There's awareness but no clear mandate","AI is on the agenda with budget allocated","Board-level priority with a C-suite sponsor and multi-year transformation roadmap"] },
+  { dim: 4, q: "How defined is your organisation's AI strategy or roadmap?",
+    opts: ["No strategy exists","Conversations have started but nothing documented","A strategy exists but isn't integrated with business KPIs","Detailed strategy aligned to objectives with quarterly milestones"] },
+  { dim: 4, q: "How does your organisation balance internal AI capability vs external vendor dependency?",
+    opts: ["Entirely reliant on vendors, no internal capability building","Vendor-dependent with occasional informal upskilling","Structured upskilling alongside vendor partnerships","Dedicated AI Centre of Excellence with talent development pipelines"] },
+  { dim: 4, q: "How formally does your organisation address ethics in AI deployment?",
+    opts: ["Ethics in AI hasn't been considered","Discussed but not codified","Published AI ethics principles guide deployment decisions","AI ethics board with formal review processes and public accountability mechanisms"] },
+  { dim: 4, q: "How would you assess your organisation's competitive urgency around AI adoption?",
+    opts: ["We see AI as a future concern","We monitor competitors but take a wait-and-see approach","Actively investing to keep pace with industry adoption","Aiming to be an industry leader with first-mover advantages in key workflows"] }
+];
+
+answers = new Array(QUESTIONS.length).fill(null);
+
+// ─────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ─────────────────────────────────────────────
+// ONBOARDING
+// ─────────────────────────────────────────────
+let onboardPanel = 0;
+
+function onboardNext(from) {
+  // Validate
+  if (from === 0) {
+    const fn = document.getElementById('f-firstname').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    const title = document.getElementById('f-jobtitle').value.trim();
+    const company = document.getElementById('f-company').value.trim();
+    if (!fn || !email || !title || !company) {
+      flashError('Please complete all fields to continue.');
+      return;
+    }
+  }
+  if (from === 1) {
+    const ind = document.getElementById('f-industry').value;
+    const sen = document.getElementById('f-seniority').value;
+    if (!ind || !sen) {
+      flashError('Please select your industry and seniority level.');
+      return;
+    }
+  }
+  setPanel(from + 1);
+}
+
+function onboardBack(from) {
+  setPanel(from - 1);
+}
+
+function setPanel(idx) {
+  document.querySelector('.onboard-panel.active').classList.remove('active');
+  document.getElementById(`opanel-${idx}`).classList.add('active');
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById(`sdot-${i}`);
+    dot.classList.remove('active', 'done');
+    if (i < idx) dot.classList.add('done');
+    else if (i === idx) dot.classList.add('active');
+  }
+  onboardPanel = idx;
+}
+
+function flashError(msg) {
+  const existing = document.querySelector('.flash-error');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'flash-error';
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#e07a5f;color:white;padding:12px 24px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;animation:fadeUp 0.3s ease';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ─────────────────────────────────────────────
+// PROFILE ENRICHMENT (simulated)
+// ─────────────────────────────────────────────
+async function enrichAndProceed(doEnrich) {
+  // Capture profile
+  profile = {
+    firstName: document.getElementById('f-firstname').value.trim(),
+    lastName: document.getElementById('f-lastname').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    jobTitle: document.getElementById('f-jobtitle').value.trim(),
+    company: document.getElementById('f-company').value.trim(),
+    industry: document.getElementById('f-industry').value,
+    seniority: document.getElementById('f-seniority').value,
+    companySize: document.getElementById('f-companysize').value,
+    func: document.getElementById('f-function').value,
+    linkedin: document.getElementById('f-linkedin').value.trim()
+  };
+
+  if (!doEnrich) {
+    buildAssessment();
+    goTo('assessment');
+    return;
+  }
+
+  const card = document.getElementById('enrich-card');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Simulate enrichment steps
+  const body = document.getElementById('enrich-body');
+  body.innerHTML = '';
+  const rows = [
+    { key: 'Name', val: null },
+    { key: 'Current Role', val: null },
+    { key: 'Organisation', val: null },
+    { key: 'Industry Context', val: null },
+    { key: 'AI Exposure Signals', val: null },
+    { key: 'Regulatory Context', val: null }
+  ];
+  rows.forEach((r, i) => {
+    body.innerHTML += `
+      <div class="enrichment-row" id="erow-${i}">
+        <span class="enrichment-key">${r.key}</span>
+        <span class="enrichment-val loading skel" style="width:${100+i*15}px;height:14px" id="eval-${i}"></span>
+      </div>`;
+  });
+
+  // Simulate async enrichment with delays
+  const enrichedVals = [
+    `${profile.firstName} ${profile.lastName}`,
+    profile.jobTitle,
+    profile.company,
+    profile.industry || 'Financial Services',
+    deriveAIExposure(profile),
+    deriveRegulatoryContext(profile)
+  ];
+
+  for (let i = 0; i < enrichedVals.length; i++) {
+    await sleep(400 + i * 300);
+    const valEl = document.getElementById(`eval-${i}`);
+    valEl.className = 'enrichment-val';
+    valEl.textContent = enrichedVals[i];
+    valEl.style.animation = 'fadeIn 0.4s ease';
+  }
+
+  document.getElementById('enrich-dot').classList.add('done');
+  document.getElementById('enrich-status-text').textContent = 'Profile enriched ✓';
+
+  enrichedData = {
+    aiExposure: enrichedVals[4],
+    regulatoryContext: enrichedVals[5],
+    industryContext: enrichedVals[3]
+  };
+
+  await sleep(600);
+  buildAssessment();
+  goTo('assessment');
+}
+
+function deriveAIExposure(p) {
+  const techRoles = ['technology','engineering','data','product'];
+  const fnLower = (p.func || '').toLowerCase();
+  if (techRoles.some(t => fnLower.includes(t))) return 'High — technical role with likely AI tooling exposure';
+  if (['C-Suite','Director'].some(s => (p.seniority||'').includes(s))) return 'Medium — strategic exposure, limited hands-on';
+  if (fnLower.includes('compliance') || fnLower.includes('legal')) return 'Low-Medium — regulated function, AI adoption cautious';
+  return 'Medium — general professional context';
+}
+
+function deriveRegulatoryContext(p) {
+  const regulated = ['Banking','Insurance','Capital Markets','Asset Management','Legal','Healthcare'];
+  const ind = p.industry || '';
+  if (regulated.some(r => ind.includes(r))) return 'High — heavily regulated sector with compliance requirements';
+  return 'Standard — typical corporate governance framework';
+}
+
+// ─────────────────────────────────────────────
+// BUILD ASSESSMENT
+// ─────────────────────────────────────────────
+function buildAssessment() {
+  // Sidebar avatar
+  document.getElementById('sb-avatar').textContent = (profile.firstName||'?')[0].toUpperCase();
+  document.getElementById('sb-name').textContent = `${profile.firstName} ${profile.lastName}`;
+  document.getElementById('sb-role').textContent = profile.jobTitle || '—';
+  document.getElementById('nav-user-display').textContent = profile.firstName;
+  document.getElementById('nav-user-display').classList.add('visible');
+
+  // Dim nav
+  const navList = document.getElementById('dim-nav-list');
+  navList.innerHTML = '';
+  DIMS.forEach((d, i) => {
+    navList.innerHTML += `
+      <div class="dim-nav-item${i===0?' current':''}" id="dnav-${i}">
+        <div class="dim-nav-icon">${d.icon}</div>
+        <span class="dim-nav-text">${d.name}</span>
+        <span class="dim-nav-check">✓</span>
+      </div>`;
+  });
+
+  // Build questions
+  const container = document.getElementById('q-container');
+  container.innerHTML = '';
+  QUESTIONS.forEach((q, qi) => {
+    // Personalised context hint
+    const ctx = buildContextHint(q, qi, profile, enrichedData);
+    const keys = ['A','B','C','D'];
+    const block = document.createElement('div');
+    block.className = 'q-block' + (qi===0?' visible':'');
+    block.id = `qblock-${qi}`;
+    block.style.display = qi===0 ? 'block' : 'none';
+    block.style.animation = 'fadeUp 0.35s ease';
+    block.innerHTML = `
+      <div class="q-header">
+        <div class="q-dim-tag">
+          <span class="tag tag-gold">${DIMS[q.dim].icon} ${DIMS[q.dim].name}</span>
+        </div>
+        <div class="q-text">${q.q}</div>
+        ${ctx ? `<div class="q-context visible">${ctx}</div>` : ''}
+      </div>
+      <div class="options-grid" id="opts-${qi}">
+        ${q.opts.map((o, oi) => `
+          <button class="opt-btn" onclick="selectAnswer(${qi},${oi})" id="opt-${qi}-${oi}">
+            <span class="opt-badge">${keys[oi]}</span>
+            <span class="opt-text">${o}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+    container.appendChild(block);
+  });
+  updateAssessNav();
+}
+
+function buildContextHint(q, qi, prof, enrich) {
+  // Generate role-specific context hints for certain questions
+  const hints = {
+    0: prof.seniority && prof.seniority.includes('C-Suite') ? `As a ${prof.jobTitle}, your understanding of AI mechanics shapes how you evaluate vendor claims and set expectations for your team.` : null,
+    3: enrich.regulatoryContext && enrich.regulatoryContext.includes('High') ? `In ${prof.industry}, understanding AI failure modes is especially important given regulatory scrutiny on model explainability.` : null,
+    5: prof.industry ? `For ${prof.industry} organisations, data accessibility is often a primary bottleneck to AI deployment — even when tools are available.` : null,
+    10: prof.func && prof.func.includes('Compliance') ? `Compliance and risk functions are increasingly expected to integrate AI tools while maintaining audit-readiness — this question reflects that dual requirement.` : null,
+    15: enrich.regulatoryContext && enrich.regulatoryContext.includes('High') ? `Regulated institutions like those in ${prof.industry} face heightened scrutiny around AI policy — regulators in many jurisdictions now expect formal documentation.` : null,
+    20: prof.seniority && (prof.seniority.includes('C-Suite') || prof.seniority.includes('Director')) ? `At your level, AI strategy ownership is part of the role. Board-level awareness of AI maturity has become a governance expectation, not just a competitive advantage.` : null
+  };
+  return hints[qi] || null;
+}
+
+// ─────────────────────────────────────────────
+// ASSESSMENT INTERACTION
+// ─────────────────────────────────────────────
+function selectAnswer(qi, oi) {
+  for (let i=0; i<4; i++) {
+    const b = document.getElementById(`opt-${qi}-${i}`);
+    if (b) b.classList.remove('selected');
+  }
+  document.getElementById(`opt-${qi}-${oi}`).classList.add('selected');
+  answers[qi] = oi + 1;
+  document.getElementById('btn-q-next').disabled = false;
+}
+
+function qNext() {
+  if (answers[currentQ] === null) return;
+  if (currentQ === QUESTIONS.length - 1) {
+    startGeneration();
+    return;
+  }
+  showQ(currentQ, currentQ + 1);
+}
+
+function qPrev() {
+  if (currentQ === 0) return;
+  showQ(currentQ, currentQ - 1);
+}
+
+function showQ(from, to) {
+  document.getElementById(`qblock-${from}`).style.display = 'none';
+  const next = document.getElementById(`qblock-${to}`);
+  next.style.display = 'block';
+  next.style.animation = 'none';
+  requestAnimationFrame(() => { next.style.animation = 'fadeUp 0.3s ease'; });
+  currentQ = to;
+  updateAssessNav();
+}
+
+function updateAssessNav() {
+  const q = QUESTIONS[currentQ];
+  const total = QUESTIONS.length;
+  const answered = answers.filter(a => a !== null).length;
+  const pct = Math.round((answered / total) * 100);
+
+  document.getElementById('q-counter').textContent = `${currentQ + 1} / ${total}`;
+  document.getElementById('sb-progress-pct').textContent = pct + '%';
+  document.getElementById('sb-progress-bar').style.width = pct + '%';
+  document.getElementById('btn-q-back').disabled = currentQ === 0;
+  document.getElementById('btn-q-next').disabled = answers[currentQ] === null;
+  document.getElementById('btn-q-next').textContent = currentQ === total-1 ? 'Submit →' : 'Next →';
+
+  // Update dim nav
+  DIMS.forEach((d, i) => {
+    const navItem = document.getElementById(`dnav-${i}`);
+    if (!navItem) return;
+    navItem.classList.remove('current', 'done');
+    const dimQs = QUESTIONS.filter(qq => qq.dim === i);
+    const allDone = dimQs.every(qq => answers[QUESTIONS.indexOf(qq)] !== null);
+    if (allDone) navItem.classList.add('done');
+    if (i === q.dim) navItem.classList.add('current');
+  });
+}
+
+// ─────────────────────────────────────────────
+// GENERATION
+// ─────────────────────────────────────────────
+async function startGeneration() {
+  goTo('generating');
+  const steps = [
+    { el: 'gs-1', icon: 'gi-1', delay: 600, done: '✓' },
+    { el: 'gs-2', icon: 'gi-2', delay: 1200, done: '✓' },
+    { el: 'gs-3', icon: 'gi-3', delay: 1800, done: '✓' },
+    { el: 'gs-4', icon: 'gi-4', delay: 2400, done: '✓' },
+    { el: 'gs-5', icon: 'gi-5', delay: 3200, done: '✓' }
+  ];
+
+  // Activate first immediately
+  document.getElementById('gs-1').classList.add('active');
+
+  for (let i = 0; i < steps.length; i++) {
+    await sleep(steps[i].delay);
+    document.getElementById(steps[i].el).classList.remove('active');
+    document.getElementById(steps[i].el).classList.add('done');
+    document.getElementById(steps[i].icon).textContent = '✓';
+    if (i + 1 < steps.length) {
+      await sleep(100);
+      document.getElementById(steps[i+1].el).classList.add('active');
+    }
+  }
+
+  // Generate AI report
+  await sleep(800);
+  await generateReport();
+}
+
+// ─────────────────────────────────────────────
+// SCORING
+// ─────────────────────────────────────────────
+function computeScores() {
+  const dimScores = DIMS.map((d, di) => {
+    const qs = QUESTIONS.filter((q, qi) => q.dim === di);
+    return qs.reduce((sum, q) => sum + (answers[QUESTIONS.indexOf(q)] || 1), 0);
+  });
+  const total = dimScores.reduce((a,b) => a+b, 0);
+  return { dimScores, total };
+}
+
+function getTier(score, max) {
+  const p = score / max;
+  if (p < 0.44) return 'beginner';
+  if (p < 0.62) return 'developing';
+  if (p < 0.80) return 'intermediate';
+  return 'advanced';
+}
+
+const TIER_META = {
+  beginner:     { label: 'Beginner',     emoji: '🌱', range: '25–44' },
+  developing:   { label: 'Developing',   emoji: '📈', range: '45–62' },
+  intermediate: { label: 'Intermediate', emoji: '⚡', range: '63–80' },
+  advanced:     { label: 'Advanced',     emoji: '🚀', range: '81–100' }
+};
+
+// ─────────────────────────────────────────────
+// AI REPORT GENERATION (Claude API)
+// ─────────────────────────────────────────────
+async function generateReport() {
+  const { dimScores, total } = computeScores();
+  const overallTier = getTier(total, 100);
+  const dimTiers = dimScores.map((s, i) => ({ dim: DIMS[i].name, score: s, tier: getTier(s, 20) }));
+
+  const prompt = buildReportPrompt(profile, enrichedData, total, dimScores, dimTiers, overallTier);
+
+  let reportText = null;
+  let reportData = null;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c => c.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    reportData = JSON.parse(clean);
+  } catch(e) {
+    // Fallback if API unavailable
+    reportData = buildFallbackReport(profile, total, dimScores, dimTiers, overallTier);
+  }
+
+  aiReport = { reportData, total, dimScores, dimTiers, overallTier };
+  renderReport();
+}
+
+function buildReportPrompt(p, enrich, total, dimScores, dimTiers, tier) {
+  return `You are an expert AI readiness analyst generating a personalised assessment report for a professional.
+
+PROFILE:
+- Name: ${p.firstName} ${p.lastName}
+- Job Title: ${p.jobTitle}
+- Company: ${p.company}
+- Industry: ${p.industry}
+- Seniority: ${p.seniority}
+- Function: ${p.func}
+- Company Size: ${p.companySize}
+- AI Exposure Signal: ${enrich.aiExposure || 'Not available'}
+- Regulatory Context: ${enrich.regulatoryContext || 'Standard'}
+
+ASSESSMENT RESULTS:
+- Overall Score: ${total}/100
+- Overall Tier: ${tier}
+- Dimension Scores:
+${dimTiers.map(d => `  • ${d.dim}: ${d.score}/20 (${d.tier})`).join('\n')}
+
+Generate a personalised AI readiness report as a JSON object with this exact structure:
+{
+  "executiveSummary": "3-4 sentence personalised narrative that addresses ${p.firstName} by name, references their specific role as ${p.jobTitle} at ${p.company}, acknowledges their industry context (${p.industry}), and interprets their overall ${tier} readiness tier in a way that is honest, actionable, and motivating. Do not use generic language.",
+  "dimensionInsights": [
+    {
+      "name": "AI Literacy",
+      "personalised_insight": "2 sentences specific to their role and score"
+    },
+    {
+      "name": "Data Readiness", 
+      "personalised_insight": "2 sentences specific to their role and score"
+    },
+    {
+      "name": "Workflow Integration",
+      "personalised_insight": "2 sentences specific to their role and score"
+    },
+    {
+      "name": "Governance & Risk",
+      "personalised_insight": "2 sentences specific to their role and score, especially relevant given ${enrich.regulatoryContext || 'standard regulatory context'}"
+    },
+    {
+      "name": "Strategic Alignment",
+      "personalised_insight": "2 sentences specific to their role and score"
+    }
+  ],
+  "priorityRecommendations": [
+    {
+      "title": "Short action-oriented title",
+      "body": "2-3 sentences of specific, actionable advice tailored to ${p.firstName}'s role as ${p.jobTitle} in ${p.industry}. Reference real tools, frameworks, or approaches where relevant."
+    },
+    {
+      "title": "Short action-oriented title",
+      "body": "2-3 sentences of specific advice"
+    },
+    {
+      "title": "Short action-oriented title", 
+      "body": "2-3 sentences of specific advice"
+    }
+  ],
+  "nexusValue": "1-2 sentences explaining specifically how the Nexus AI Native Foundation programme would address ${p.firstName}'s specific gaps, referencing their role and industry."
+}
+
+Respond ONLY with the JSON object, no preamble or markdown.`;
+}
+
+function buildFallbackReport(p, total, dimScores, dimTiers, tier) {
+  const weak = [...dimTiers].sort((a,b) => a.score - b.score).slice(0,3);
+  return {
+    executiveSummary: `${p.firstName}, as ${p.jobTitle} at ${p.company}, your assessment reveals a ${tier} AI readiness profile with a score of ${total}/100. Your ${p.industry} context brings specific considerations around governance and data infrastructure that are reflected in your results. The patterns in your responses suggest clear opportunities to accelerate adoption in a structured, risk-aware way. This report outlines where to focus first for maximum impact.`,
+    dimensionInsights: DIMS.map((d, i) => ({
+      name: d.name,
+      personalised_insight: `Your score of ${dimScores[i]}/20 in ${d.name} places you at the ${dimTiers[i].tier} level. ${getDimDefaultInsight(i, dimTiers[i].tier, p)}`
+    })),
+    priorityRecommendations: weak.map(w => ({
+      title: `Strengthen ${w.dim}`,
+      body: `Your ${w.tier} score in ${w.dim} represents the highest-leverage improvement area for a ${p.jobTitle}. Addressing this systematically will unlock downstream benefits across your other dimensions and your organisation's overall AI trajectory.`
+    })),
+    nexusValue: `The Nexus AI Native Foundation programme is designed for professionals at your stage — bridging the gap between ${tier}-level awareness and systematic, governance-ready AI deployment in ${p.industry}.`
+  };
+}
+
+function getDimDefaultInsight(i, tier, p) {
+  const insights = {
+    beginner: ["Building foundational AI literacy is essential before deploying tools at scale.","Establishing data governance practices now will pay dividends as AI adoption accelerates.","Identifying 1-2 workflow automation pilots would build confidence and demonstrate ROI.","Developing an AI usage policy should be a near-term priority given your organisation's risk exposure.","Executive alignment on AI strategy is a prerequisite for sustained investment."],
+    developing: ["Moving beyond basic tool use toward structured prompt frameworks will significantly improve your outputs.","Formalising data quality standards will enable more reliable AI application development.","Systematising your AI workflow integration will help scale what's working.","Codifying your governance approach will build stakeholder trust in AI initiatives.","Connecting AI initiatives to measurable business KPIs will accelerate internal buy-in."],
+    intermediate: ["Applied prompt engineering and model evaluation skills are your next development frontier.","Automated data quality pipelines would remove the main friction point in your AI deployments.","Building API integrations between AI tools and enterprise systems will multiply your impact.","Model cards and explainability documentation will future-proof your AI deployments for regulatory scrutiny.","A formal AI roadmap with executive sponsorship will enable larger-scale transformation."],
+    advanced: ["Your strong literacy foundation positions you to explore agent orchestration and RAG architectures.","You're well-positioned to lead enterprise AI data mesh initiatives within your organisation.","Focus on measuring and communicating AI ROI to drive broader organisational adoption.","Your governance sophistication gives you a competitive advantage — consider external certification.","Establishing a Centre of Excellence would formalise and scale your AI leadership position."]
+  };
+  return insights[tier][i] || '';
+}
+
+// ─────────────────────────────────────────────
+// RENDER REPORT
+// ─────────────────────────────────────────────
+function renderReport() {
+  const { reportData, total, dimScores, dimTiers, overallTier } = aiReport;
+  const tierMeta = TIER_META[overallTier];
+  const date = new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' });
+  const pct = total / 100;
+  const circumference = 408;
+  const offset = circumference * (1 - pct);
+
+  const wrap = document.getElementById('report-wrap');
+  wrap.innerHTML = `
+    <!-- HERO -->
+    <div class="report-hero">
+      <div class="report-hero-left">
+        <div class="report-kicker">AI Readiness Report · Nexus FrontierTech</div>
+        <h1 class="report-h1">${profile.firstName}<br><em>${tierMeta.label}</em></h1>
+        <div class="report-meta">
+          <span class="report-meta-item">🏢 ${profile.company}</span>
+          <span class="report-meta-item">💼 ${profile.jobTitle}</span>
+          <span class="report-meta-item">📅 ${date}</span>
+        </div>
+      </div>
+      <div class="score-ring-wrap">
+        <svg class="score-ring-svg" viewBox="0 0 160 160">
+          <circle class="score-ring-bg" cx="80" cy="80" r="65"/>
+          <circle class="score-ring-fill tier-ring-${overallTier}" id="ring-fill" cx="80" cy="80" r="65" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference}"/>
+        </svg>
+        <div class="score-ring-text">
+          <div class="score-ring-num" id="score-counter">0</div>
+          <div class="score-ring-denom">/ 100</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER BANNER -->
+    <div class="tier-banner tier-bg-${overallTier}" style="margin-bottom:48px">
+      <div class="tier-banner-tier tier-color-${overallTier}">${tierMeta.emoji} ${tierMeta.label} · Score range ${tierMeta.range}</div>
+      <div class="tier-banner-title">${reportData.executiveSummary.split('.')[0]}.</div>
+      <div class="tier-banner-desc" style="color:var(--muted);margin-top:8px">${reportData.executiveSummary.split('.').slice(1).join('.').trim()}</div>
+    </div>
+
+    <!-- RADAR -->
+    <div class="narrative-section">
+      <div class="section-header">
+        <div class="section-title">Dimension Overview</div>
+        <span class="tag tag-muted">${DIMS.length} areas assessed</span>
+      </div>
+      <div class="radar-card">
+        <svg id="radar-svg" width="340" height="300" viewBox="0 0 340 300"></svg>
+      </div>
+    </div>
+
+    <!-- DIM BREAKDOWN -->
+    <div class="narrative-section">
+      <div class="section-header">
+        <div class="section-title">Dimension Scores</div>
+      </div>
+      <div class="dim-cards-grid" id="dim-cards-grid"></div>
+    </div>
+
+    <!-- PERSONALISED NARRATIVE -->
+    <div class="narrative-section">
+      <div class="section-header">
+        <div class="section-title">Personalised Analysis</div>
+        <span class="tag tag-gold">AI-generated for ${profile.firstName}</span>
+      </div>
+      <div class="narrative-card" id="narrative-text">
+        ${reportData.executiveSummary}
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="narrative-section">
+      <div class="section-header">
+        <div class="section-title">Priority Recommendations</div>
+        <span class="tag tag-teal">Tailored to your role</span>
+      </div>
+      <div class="reco-grid" id="reco-grid"></div>
+    </div>
+
+    <!-- OFFER -->
+    <div class="offer-card">
+      <div class="offer-kicker">Your Next Step</div>
+      <div class="offer-title">AI Native Foundation</div>
+      <div class="offer-desc">${reportData.nexusValue}</div>
+      <div class="offer-btns">
+        <button class="btn btn-gold" onclick="alert('Enrolment flow — contact info@nexusfrontiertech.com')">Enrol Now →</button>
+        <button class="btn btn-outline" onclick="window.print()" style="color:var(--muted);border-color:var(--border-bright)">Download Report</button>
+        <button class="btn btn-ghost" onclick="startOver()">Retake Assessment</button>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:11px;color:var(--soft);font-family:var(--font-mono);padding-top:24px;border-top:1px solid var(--border)">
+      © ${new Date().getFullYear()} Nexus FrontierTech · Confidential · AI Readiness Assessment
+    </div>
+  `;
+
+  goTo('report');
+
+  // Animate score counter
+  let count = 0;
+  const target = total;
+  const timer = setInterval(() => {
+    count = Math.min(count + 1, target);
+    document.getElementById('score-counter').textContent = count;
+    if (count >= target) clearInterval(timer);
+  }, 1200 / target);
+
+  // Animate ring
+  setTimeout(() => {
+    document.getElementById('ring-fill').style.strokeDashoffset = offset;
+  }, 200);
+
+  // Build dim cards
+  const grid = document.getElementById('dim-cards-grid');
+  dimScores.forEach((s, i) => {
+    const tier = dimTiers[i].tier;
+    const insight = reportData.dimensionInsights[i]?.personalised_insight || '';
+    const pctW = Math.round((s/20)*100);
+    const card = document.createElement('div');
+    card.className = 'dim-card';
+    card.innerHTML = `
+      <div class="dim-card-header">
+        <div class="dim-card-name">${DIMS[i].icon} ${DIMS[i].name}</div>
+        <div class="dim-card-score tier-score-${tier}">${s}/20</div>
+      </div>
+      <div class="dim-bar-track">
+        <div class="dim-bar-fill tier-bar-${tier}" id="dbar-${i}"></div>
+      </div>
+      <div class="dim-tier-label tier-color-${tier}">${TIER_META[tier].label}</div>
+      <div class="dim-ai-insight">${insight}</div>
+    `;
+    grid.appendChild(card);
+    setTimeout(() => { document.getElementById(`dbar-${i}`).style.width = pctW + '%'; }, 300 + i*120);
+  });
+
+  // Build reco cards
+  const recoGrid = document.getElementById('reco-grid');
+  (reportData.priorityRecommendations || []).forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'reco-card';
+    card.style.animationDelay = `${i * 0.15}s`;
+    card.innerHTML = `
+      <div class="reco-num">0${i+1}</div>
+      <div class="reco-title">${r.title}</div>
+      <div class="reco-body">${r.body}</div>
+    `;
+    recoGrid.appendChild(card);
+  });
+
+  // Draw radar
+  drawRadar(dimScores, overallTier);
+}
+
+function drawRadar(scores, tier) {
+  const svg = document.getElementById('radar-svg');
+  if (!svg) return;
+  const cx=170, cy=152, r=100, n=5;
+  const colors = { beginner:'#e07a5f', developing:'#f4b942', intermediate:'#4ecdc4', advanced:'#6bcb77' };
+  const col = colors[tier] || '#d4a843';
+  const a0 = -Math.PI/2, step = 2*Math.PI/n;
+  let html = '';
+  for (let l=1; l<=4; l++) {
+    const rr = r*l/4;
+    const pts = Array.from({length:n}, (_,i) => `${cx+rr*Math.cos(a0+i*step)},${cy+rr*Math.sin(a0+i*step)}`);
+    html += `<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+  }
+  for (let i=0; i<n; i++) {
+    const a = a0+i*step;
+    html += `<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+  }
+  const dataPts = scores.map((s,i) => {
+    const a=a0+i*step, rr=(s/20)*r;
+    return `${cx+rr*Math.cos(a)},${cy+rr*Math.sin(a)}`;
+  });
+  html += `<polygon points="${dataPts.join(' ')}" fill="${col}22" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  scores.forEach((s,i) => {
+    const a=a0+i*step, rr=(s/20)*r;
+    html += `<circle cx="${cx+rr*Math.cos(a)}" cy="${cy+rr*Math.sin(a)}" r="5" fill="${col}"/>`;
+  });
+  for (let i=0; i<n; i++) {
+    const a=a0+i*step, lx=cx+r*1.2*Math.cos(a), ly=cy+r*1.2*Math.sin(a);
+    const anch = Math.cos(a)>0.3?'start':Math.cos(a)<-0.3?'end':'middle';
+    html += `<text x="${lx}" y="${ly+5}" text-anchor="${anch}" font-family="Outfit,sans-serif" font-size="11" fill="rgba(232,236,244,0.55)" font-weight="500">${DIMS[i].short}</text>`;
+  }
+  svg.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function startOver() {
+  location.reload();
+}
+</script>
+</body>
+</html>

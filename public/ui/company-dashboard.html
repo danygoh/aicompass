@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company AI Readiness Dashboard — Nexus FrontierTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0f14;
+  --bg2: #101520;
+  --bg3: #161d28;
+  --surface: #1a2232;
+  --elevated: #202a3a;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.04);
+  --text: #e8ecf4;
+  --muted: #6b7a96;
+  --soft: #404d63;
+  --gold: #c9a84c;
+  --gold-bg: rgba(201,168,76,0.1);
+  --gold-border: rgba(201,168,76,0.25);
+  --teal: #3db8b0;
+  --teal-bg: rgba(61,184,176,0.1);
+  --red: #c05a46;
+  --red-bg: rgba(192,90,70,0.1);
+  --green: #5aab68;
+  --green-bg: rgba(90,171,104,0.1);
+  --amber: #d4914a;
+  --font-d: 'Fraunces', serif;
+  --font-b: 'Syne', sans-serif;
+  --font-m: 'JetBrains Mono', monospace;
+  --r: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-b); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+/* NOISE */
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0;
+}
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 40px; border-bottom: 1px solid var(--border);
+  background: rgba(11,15,20,0.95); position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(20px);
+}
+.nav-logo { font-family: var(--font-m); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.nav-right { display: flex; gap: 16px; align-items: center; }
+.nav-company { font-family: var(--font-m); font-size: 11px; color: var(--muted); }
+
+/* LAYOUT */
+.page { max-width: 1140px; margin: 0 auto; padding: 48px 32px 80px; position: relative; z-index: 1; }
+
+/* BUTTONS */
+.btn { font-family: var(--font-b); font-weight: 600; font-size: 13px; padding: 11px 24px; border-radius: var(--r); border: none; cursor: pointer; transition: all 0.2s; }
+.btn-gold { background: var(--gold); color: var(--bg); }
+.btn-gold:hover { background: #d4b458; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover { border-color: var(--muted); color: var(--text); }
+.btn-ghost { background: transparent; border: none; color: var(--muted); font-size: 12px; padding: 8px 14px; }
+.btn-ghost:hover { color: var(--text); }
+
+/* TAGS */
+.tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-m); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; border: 1px solid; }
+.tg { color: var(--gold); background: var(--gold-bg); border-color: var(--gold-border); }
+.tt { color: var(--teal); background: var(--teal-bg); border-color: rgba(61,184,176,0.25); }
+.tm { color: var(--muted); background: rgba(107,122,150,0.1); border-color: var(--border); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+.au { animation: fadeUp 0.4s ease forwards; }
+
+/* ═══════════════════════
+   UPLOAD / DEMO PANEL
+═══════════════════════ */
+.upload-hero {
+  text-align: center; padding: 80px 24px;
+  border: 1px dashed var(--border); border-radius: 12px;
+  background: var(--bg3); margin-bottom: 0;
+  transition: border-color 0.2s;
+}
+.upload-hero:hover { border-color: var(--gold-border); }
+.uh-icon { font-size: 48px; margin-bottom: 20px; }
+.uh-h { font-family: var(--font-d); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+.uh-p { font-size: 14px; color: var(--muted); max-width: 440px; margin: 0 auto 32px; line-height: 1.65; }
+.uh-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ═══════════════════════
+   COMPANY INPUT
+═══════════════════════ */
+.company-input-panel {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 32px 36px; margin-bottom: 32px;
+}
+.cip-h { font-family: var(--font-d); font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.cip-p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.cip-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.fl { display: flex; flex-direction: column; gap: 5px; }
+.fl label { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.fi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  color: var(--text); font-family: var(--font-b); font-size: 13px; padding: 11px 14px;
+  outline: none; transition: border-color 0.2s; min-width: 180px;
+}
+.fi::placeholder { color: var(--soft); }
+.fi:focus { border-color: var(--gold); }
+
+/* ═══════════════════════
+   STUDENT TABLE
+═══════════════════════ */
+.table-section { margin-bottom: 40px; }
+.ts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.ts-title { font-family: var(--font-d); font-size: 22px; font-weight: 600; }
+.table-wrap { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.t-head { display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 80px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.t-head-cell { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); }
+.t-row { display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 80px; padding: 14px 20px; border-bottom: 1px solid var(--border2); align-items: center; transition: background 0.15s; }
+.t-row:last-child { border: none; }
+.t-row:hover { background: var(--elevated); }
+.tc { font-size: 12px; }
+.tc-name { font-weight: 600; }
+.tc-role { font-size: 11px; color: var(--muted); }
+.score-chip { display: inline-block; font-family: var(--font-m); font-size: 10px; padding: 3px 8px; border-radius: 3px; }
+.mini-bar { height: 4px; background: var(--soft); border-radius: 100px; margin-top: 4px; }
+.tier-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+/* ═══════════════════════
+   AGGREGATE METRICS
+═══════════════════════ */
+.metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 40px; }
+.metric-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 22px 24px;
+}
+.mc-label { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.mc-val { font-family: var(--font-d); font-size: 40px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.mc-sub { font-size: 11px; color: var(--muted); }
+
+/* ═══════════════════════
+   DIM HEATMAP
+═══════════════════════ */
+.heatmap-section { margin-bottom: 40px; }
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 12px;
+}
+.hm-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px; text-align: center; position: relative; overflow: hidden;
+}
+.hm-icon { font-size: 24px; margin-bottom: 10px; }
+.hm-name { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-m); }
+.hm-score { font-family: var(--font-d); font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.hm-tier { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-m); margin-bottom: 12px; }
+.hm-bar-t { height: 4px; background: var(--soft); border-radius: 100px; overflow: hidden; }
+.hm-bar-f { height: 100%; border-radius: 100px; transition: width 1.5s ease; width: 0; }
+
+/* DEPARTMENT BREAKDOWN */
+.dept-section { margin-bottom: 40px; }
+.dept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 14px; }
+.dept-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 22px;
+}
+.dept-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.dept-meta { font-family: var(--font-m); font-size: 10px; color: var(--muted); margin-bottom: 16px; }
+.dept-score { font-family: var(--font-d); font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+.dept-bar-t { height: 4px; background: var(--soft); border-radius: 100px; overflow: hidden; margin-bottom: 12px; }
+.dept-bar-f { height: 100%; border-radius: 100px; transition: width 1.2s ease; }
+.dept-dims { display: flex; flex-direction: column; gap: 6px; }
+.dept-dim-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+.dept-dim-name { color: var(--muted); }
+.dept-dim-score { font-family: var(--font-m); font-size: 10px; }
+
+/* DISTRIBUTION CHART */
+.dist-section { margin-bottom: 40px; }
+.dist-chart { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 28px; }
+.dist-bars { display: flex; gap: 16px; align-items: flex-end; height: 140px; margin-bottom: 12px; }
+.dist-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dist-bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: height 1.2s ease; min-height: 4px; }
+.dist-bar-label { font-family: var(--font-m); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center; }
+.dist-bar-count { font-family: var(--font-d); font-size: 20px; font-weight: 600; }
+
+/* COMPANY REPORT SECTION */
+.crep-section { margin-bottom: 40px; }
+.crep-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden;
+}
+.crep-top {
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--elevated);
+}
+.crep-body { padding: 28px 32px; }
+.crep-narrative {
+  font-size: 14px; line-height: 1.8; color: rgba(232,236,244,0.8);
+  margin-bottom: 24px;
+}
+.crep-narrative p + p { margin-top: 14px; }
+.crep-narrative strong { color: var(--text); }
+
+/* GENERATING STATE */
+.gen-overlay {
+  position: fixed; inset: 0; background: rgba(11,15,20,0.95);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; flex-direction: column; gap: 20px;
+}
+.gen-overlay.on { display: flex; }
+.gen-ring { width: 60px; height: 60px; border: 3px solid var(--elevated); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+.gen-text { font-family: var(--font-d); font-size: 22px; font-weight: 600; }
+.gen-sub { font-size: 13px; color: var(--muted); font-family: var(--font-m); animation: pulse 1.5s infinite; }
+
+/* ADD STUDENT MODAL */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(11,15,20,0.85);
+  display: none; align-items: center; justify-content: center; z-index: 200;
+  backdrop-filter: blur(8px);
+}
+.modal-bg.on { display: flex; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 36px; max-width: 500px; width: 100%; margin: 20px;
+  animation: fadeUp 0.3s ease;
+}
+.modal-h { font-family: var(--font-d); font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+.modal-p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.modal-form { display: flex; flex-direction: column; gap: 14px; }
+.fg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Tier colour utils */
+.c-b{color:#c05a46}.c-d{color:#c9a84c}.c-i{color:var(--teal)}.c-a{color:var(--green)}
+.bar-b{background:#c05a46}.bar-d{background:#c9a84c}.bar-i{background:var(--teal)}.bar-a{background:var(--green)}
+.dot-b{background:#c05a46}.dot-d{background:#c9a84c}.dot-i{background:var(--teal)}.dot-a{background:var(--green)}
+.bg-b{background:rgba(192,90,70,0.12)}.bg-d{background:rgba(201,168,76,0.1)}.bg-i{background:rgba(61,184,176,0.1)}.bg-a{background:rgba(90,171,104,0.1)}
+
+/* skel */
+.skel { background: linear-gradient(90deg, var(--surface) 25%, var(--elevated) 50%, var(--surface) 75%); background-size: 200%; animation: shimmer 1.5s infinite; border-radius: 3px; }
+
+@media (max-width:900px) { .metrics-grid{grid-template-columns:repeat(2,1fr)} .heatmap-grid{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:600px) { .metrics-grid{grid-template-columns:1fr} .heatmap-grid{grid-template-columns:1fr} .t-head,.t-row{grid-template-columns:1fr 1fr 1fr;} }
+@media print {
+  .nav,.modal-bg,.gen-overlay,.btn-gold,.uh-btns,.cip-form button { display:none!important; }
+  body { background: white; color: #111; }
+  .bg3,.surface,.elevated,.bg2 { background: #f5f5f5!important; }
+  .text { color: #111!important; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">Nexus · Company Dashboard</div>
+  <div class="nav-right">
+    <span class="nav-company" id="nav-co"></span>
+    <button class="btn btn-outline" onclick="openAddModal()" style="font-size:12px;padding:8px 16px">+ Add Student</button>
+    <button class="btn btn-outline" onclick="loadDemo()" style="font-size:12px;padding:8px 16px">Load Demo</button>
+  </div>
+</nav>
+
+<!-- GEN OVERLAY -->
+<div class="gen-overlay" id="gen-overlay">
+  <div class="gen-ring"></div>
+  <div class="gen-text">Generating Company Report…</div>
+  <div class="gen-sub" id="gen-sub">Analysing cohort data</div>
+</div>
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-h">Add Student Result</div>
+    <p class="modal-p">Enter a student's profile and assessment scores to add them to the cohort dashboard.</p>
+    <div class="modal-form">
+      <div class="fg2">
+        <div class="fl"><label>First Name</label><input class="fi" id="m-fn" placeholder="Sarah"></div>
+        <div class="fl"><label>Last Name</label><input class="fi" id="m-ln" placeholder="Chen"></div>
+      </div>
+      <div class="fl"><label>Job Title</label><input class="fi" id="m-jt" placeholder="Head of Risk"></div>
+      <div class="fg2">
+        <div class="fl"><label>Company</label><input class="fi" id="m-co" placeholder="DBS Bank"></div>
+        <div class="fl"><label>Department / Function</label><input class="fi" id="m-dept" placeholder="Risk & Compliance"></div>
+      </div>
+      <div class="fl"><label>Industry</label>
+        <select class="fi" id="m-ind">
+          <option>Banking & Financial Services</option>
+          <option>Asset Management & Wealth</option>
+          <option>Capital Markets</option>
+          <option>Insurance</option>
+          <option>Consulting & Professional Services</option>
+          <option>Healthcare & Life Sciences</option>
+          <option>Legal</option>
+          <option>Technology</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div style="font-family:var(--font-m);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:-4px">Dimension Scores (each 5–20)</div>
+      <div class="fg2">
+        <div class="fl"><label>🧠 AI Literacy</label><input class="fi" id="m-s0" type="number" min="5" max="20" placeholder="12"></div>
+        <div class="fl"><label>🗄 Data Readiness</label><input class="fi" id="m-s1" type="number" min="5" max="20" placeholder="11"></div>
+        <div class="fl"><label>⚡ Workflow</label><input class="fi" id="m-s2" type="number" min="5" max="20" placeholder="13"></div>
+        <div class="fl"><label>🛡 Governance</label><input class="fi" id="m-s3" type="number" min="5" max="20" placeholder="10"></div>
+      </div>
+      <div class="fl"><label>🎯 Strategic Alignment</label><input class="fi" id="m-s4" type="number" min="5" max="20" placeholder="14"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="addStudent()">Add to Cohort →</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page">
+
+  <!-- WELCOME STATE -->
+  <div id="welcome-state">
+    <div style="margin-bottom:32px">
+      <h1 style="font-family:var(--font-d);font-size:clamp(36px,5vw,56px);font-weight:700;line-height:1.05;margin-bottom:10px">Company <i style="font-style:italic;color:var(--gold)">AI Readiness</i><br>Dashboard</h1>
+      <p style="font-size:15px;color:var(--muted);max-width:520px;line-height:1.7">Aggregate your cohort's individual assessment results to generate an executive-grade company-wide AI readiness report.</p>
+    </div>
+    <div class="company-input-panel">
+      <div class="cip-h">Set Company Context</div>
+      <p class="cip-p">Add the company and class details before loading student results.</p>
+      <div class="cip-form">
+        <div class="fl"><label>Company Name</label><input class="fi" id="co-name" placeholder="DBS Bank"></div>
+        <div class="fl"><label>Industry</label>
+          <select class="fi" id="co-ind">
+            <option value="">Select</option>
+            <option>Banking & Financial Services</option>
+            <option>Asset Management & Wealth</option>
+            <option>Capital Markets</option>
+            <option>Insurance</option>
+            <option>Consulting & Professional Services</option>
+            <option>Healthcare & Life Sciences</option>
+            <option>Legal</option>
+            <option>Technology</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="fl"><label>Class / Cohort Name</label><input class="fi" id="co-class" placeholder="Executive AI Programme — Cohort 1"></div>
+        <button class="btn btn-gold" onclick="initDashboard()">Initialise Dashboard →</button>
+      </div>
+    </div>
+    <div class="upload-hero">
+      <div class="uh-icon">📊</div>
+      <div class="uh-h">Load a demo cohort</div>
+      <p class="uh-p">See how the dashboard looks with a sample class of 8 students from a financial services firm.</p>
+      <div class="uh-btns">
+        <button class="btn btn-gold" onclick="loadDemo()">Load Demo Cohort →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD STATE (hidden until data loaded) -->
+  <div id="dashboard-state" style="display:none">
+
+    <!-- COMPANY HEADER -->
+    <div style="margin-bottom:40px" id="co-header"></div>
+
+    <!-- METRICS ROW -->
+    <div class="metrics-grid" id="metrics-grid"></div>
+
+    <!-- DIM HEATMAP -->
+    <div class="heatmap-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:var(--font-d);font-size:22px;font-weight:600">Dimension Heatmap</h2>
+        <span class="tag tm">Company averages</span>
+      </div>
+      <div class="heatmap-grid" id="heatmap"></div>
+    </div>
+
+    <!-- DISTRIBUTION -->
+    <div class="dist-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:var(--font-d);font-size:22px;font-weight:600">Readiness Distribution</h2>
+        <span class="tag tm">Overall score tiers</span>
+      </div>
+      <div class="dist-chart">
+        <div class="dist-bars" id="dist-bars"></div>
+        <div style="font-size:11px;color:var(--soft);font-family:var(--font-m);text-align:center">
+          Beginner (25–44) · Developing (45–62) · Intermediate (63–80) · Advanced (81–100)
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPARTMENT BREAKDOWN -->
+    <div class="dept-section" id="dept-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:var(--font-d);font-size:22px;font-weight:600">Department Breakdown</h2>
+        <span class="tag tm" id="dept-count-tag"></span>
+      </div>
+      <div class="dept-grid" id="dept-grid"></div>
+    </div>
+
+    <!-- STUDENT TABLE -->
+    <div class="table-section">
+      <div class="ts-header">
+        <div class="ts-title">Individual Results</div>
+        <button class="btn btn-outline" onclick="openAddModal()" style="font-size:12px;padding:8px 16px">+ Add Student</button>
+      </div>
+      <div class="table-wrap">
+        <div class="t-head">
+          <div class="t-head-cell">Name</div>
+          <div class="t-head-cell">Role</div>
+          <div class="t-head-cell">Dept</div>
+          <div class="t-head-cell">Total</div>
+          <div class="t-head-cell">Literacy</div>
+          <div class="t-head-cell">Data</div>
+          <div class="t-head-cell">Workflow</div>
+          <div class="t-head-cell">Gov.</div>
+          <div class="t-head-cell">Strategy</div>
+        </div>
+        <div id="student-table"></div>
+      </div>
+    </div>
+
+    <!-- AI COMPANY REPORT -->
+    <div class="crep-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:var(--font-d);font-size:22px;font-weight:600">AI-Generated Company Report</h2>
+        <div style="display:flex;gap:10px">
+          <span class="tag tg" id="rep-gen-tag" style="display:none">AI-Generated</span>
+          <button class="btn btn-gold" id="btn-gen-rep" onclick="generateCompanyReport()">Generate Report →</button>
+        </div>
+      </div>
+      <div class="crep-card" id="crep-card">
+        <div class="crep-top">
+          <span style="font-family:var(--font-m);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Executive Summary</span>
+          <span class="tag tm">Awaiting generation</span>
+        </div>
+        <div class="crep-body">
+          <div style="text-align:center;padding:32px 0;color:var(--soft)">
+            <div style="font-size:32px;margin-bottom:12px">📋</div>
+            <div style="font-size:14px">Click "Generate Report" to create an AI-written executive summary of your cohort's readiness.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINT CTA -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:36px 40px;text-align:center">
+      <div style="font-family:var(--font-m);font-size:10px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">Ready to present?</div>
+      <div style="font-family:var(--font-d);font-size:26px;font-weight:600;margin-bottom:10px">Export the Company Report</div>
+      <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto 24px;line-height:1.65">Share with senior leadership, HR, or your client sponsor as a print-ready PDF.</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="window.print()">Download PDF Report</button>
+        <button class="btn btn-outline" onclick="resetDashboard()">New Cohort</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────
+// STATE
+// ──────────────────────────────────────
+let STUDENTS = [];
+let COMPANY = { name:'', industry:'', cohort:'' };
+
+const DIMS = [
+  {id:'literacy',  name:'AI Literacy',        icon:'🧠', s:'Literacy'},
+  {id:'data',      name:'Data Readiness',      icon:'🗄', s:'Data'},
+  {id:'workflow',  name:'Workflow Integration',icon:'⚡', s:'Workflow'},
+  {id:'governance',name:'Governance & Risk',   icon:'🛡', s:'Gov.'},
+  {id:'strategy',  name:'Strategic Alignment', icon:'🎯', s:'Strategy'}
+];
+
+function tier(s, mx=100) {
+  const p=s/mx;
+  if(p<0.44)return'b';if(p<0.62)return'd';if(p<0.80)return'i';return'a';
+}
+const TIERS={b:{l:'Beginner',r:'25–44'},d:{l:'Developing',r:'45–62'},i:{l:'Intermediate',r:'63–80'},a:{l:'Advanced',r:'81–100'}};
+const TIER_COLORS={b:'#c05a46',d:'#c9a84c',i:'#3db8b0',a:'#5aab68'};
+
+// ──────────────────────────────────────
+// DEMO DATA
+// ──────────────────────────────────────
+function loadDemo() {
+  COMPANY = { name:'Meridian Capital Group', industry:'Asset Management & Wealth', cohort:'Executive AI Leadership Programme — Cohort 3' };
+  STUDENTS = [
+    {fn:'Amanda',ln:'Torres',title:'Chief Investment Officer',dept:'Investment',ind:'Asset Management & Wealth',ds:[15,13,14,12,17]},
+    {fn:'James',ln:'Whitfield',title:'Head of Risk',dept:'Risk & Compliance',ind:'Asset Management & Wealth',ds:[10,9,8,7,11]},
+    {fn:'Priya',ln:'Nair',title:'VP Digital Strategy',dept:'Technology',ind:'Asset Management & Wealth',ds:[17,16,18,14,16]},
+    {fn:'Marcus',ln:'Obi',title:'Portfolio Manager',dept:'Investment',ind:'Asset Management & Wealth',ds:[11,10,12,9,10]},
+    {fn:'Sandra',ln:'Liu',title:'Head of Compliance',dept:'Risk & Compliance',ind:'Asset Management & Wealth',ds:[8,9,7,10,8]},
+    {fn:'Oliver',ln:'Beck',title:'CFO',dept:'Finance',ind:'Asset Management & Wealth',ds:[12,14,11,13,16]},
+    {fn:'Aisha',ln:'Mohammed',title:'Data Science Lead',dept:'Technology',ind:'Asset Management & Wealth',ds:[18,19,17,15,14]},
+    {fn:'Tom',ln:'Harrington',title:'Head of Operations',dept:'Operations',ind:'Asset Management & Wealth',ds:[9,8,11,8,10]}
+  ];
+  STUDENTS = STUDENTS.map(s=>({...s,total:s.ds.reduce((a,b)=>a+b,0)}));
+  document.getElementById('welcome-state').style.display='none';
+  document.getElementById('dashboard-state').style.display='block';
+  document.getElementById('nav-co').textContent = COMPANY.name;
+  renderDashboard();
+}
+
+// ──────────────────────────────────────
+// INIT
+// ──────────────────────────────────────
+function initDashboard() {
+  const name=document.getElementById('co-name').value.trim();
+  const ind=document.getElementById('co-ind').value;
+  const cohort=document.getElementById('co-class').value.trim();
+  if(!name){alert('Please enter a company name.');return;}
+  COMPANY={name,industry:ind,cohort};
+  document.getElementById('welcome-state').style.display='none';
+  document.getElementById('dashboard-state').style.display='block';
+  document.getElementById('nav-co').textContent=name;
+
+  // Try to load from localStorage
+  try {
+    const stored = JSON.parse(localStorage.getItem('nexus_results')||'[]');
+    const co = stored.filter(r=>r.profile.company?.toLowerCase()===name.toLowerCase());
+    if(co.length>0) {
+      STUDENTS = co.map(r=>({
+        fn:r.profile.firstName, ln:r.profile.lastName,
+        title:r.profile.jobTitle, dept:r.profile.func||'—',
+        ind:r.profile.industry, ds:r.scores.ds,
+        total:r.scores.total
+      }));
+    }
+  } catch(e){}
+
+  renderDashboard();
+}
+
+// ──────────────────────────────────────
+// ADD STUDENT
+// ──────────────────────────────────────
+function openAddModal() { document.getElementById('modal-bg').classList.add('on'); }
+function closeModal() { document.getElementById('modal-bg').classList.remove('on'); }
+
+function addStudent() {
+  const fn=mv('m-fn'), ln=mv('m-ln'), jt=mv('m-jt'), co=mv('m-co'), dept=mv('m-dept'), ind=mv('m-ind');
+  const ds=[0,1,2,3,4].map(i=>parseInt(document.getElementById(`m-s${i}`).value)||10);
+  if(!fn||!jt){alert('Please fill in name and job title.');return;}
+  STUDENTS.push({fn,ln,title:jt,dept:dept||'—',ind,ds,total:ds.reduce((a,b)=>a+b,0)});
+  if(COMPANY.name) {
+    const co2 = mv('m-co')||COMPANY.name;
+    if(!COMPANY.name) COMPANY.name=co2;
+  }
+  closeModal();
+  if(document.getElementById('dashboard-state').style.display==='none'){
+    COMPANY.name=co||COMPANY.name||'Your Company';
+    document.getElementById('welcome-state').style.display='none';
+    document.getElementById('dashboard-state').style.display='block';
+    document.getElementById('nav-co').textContent=COMPANY.name;
+  }
+  renderDashboard();
+}
+function mv(id){return document.getElementById(id)?.value?.trim()||'';}
+
+// ──────────────────────────────────────
+// RENDER DASHBOARD
+// ──────────────────────────────────────
+function renderDashboard() {
+  if(STUDENTS.length===0) return;
+
+  const n=STUDENTS.length;
+  const avgTotal = Math.round(STUDENTS.reduce((s,st)=>s+st.total,0)/n);
+  const coTier = tier(avgTotal,100);
+  const dimAvgs = DIMS.map((_,i)=>Math.round(STUDENTS.reduce((s,st)=>s+st.ds[i],0)/n));
+  const tierCounts = {b:0,d:0,i:0,a:0};
+  STUDENTS.forEach(s=>tierCounts[tier(s.total)]++);
+  const weakestDim = DIMS[dimAvgs.indexOf(Math.min(...dimAvgs))];
+  const strongestDim = DIMS[dimAvgs.indexOf(Math.max(...dimAvgs))];
+
+  // Company header
+  document.getElementById('co-header').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px">
+      <div>
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">AI Readiness · Company Report</div>
+        <h1 style="font-family:var(--font-d);font-size:clamp(30px,5vw,48px);font-weight:700;line-height:1.0;margin-bottom:4px">${COMPANY.name}</h1>
+        <div style="font-size:13px;color:var(--muted);font-family:var(--font-m)">${COMPANY.cohort||''} · ${n} participants · ${new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">Company Tier</div>
+        <div style="font-family:var(--font-d);font-size:48px;font-weight:700;color:${TIER_COLORS[coTier]};line-height:1">${avgTotal}</div>
+        <div style="font-size:11px;color:${TIER_COLORS[coTier]};font-family:var(--font-m);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">${TIERS[coTier].l}</div>
+      </div>
+    </div>`;
+
+  // Metrics
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="metric-card"><div class="mc-label">Company Score</div><div class="mc-val" style="color:${TIER_COLORS[coTier]}">${avgTotal}</div><div class="mc-sub">Average / 100 · ${TIERS[coTier].l}</div></div>
+    <div class="metric-card"><div class="mc-label">Participants</div><div class="mc-val">${n}</div><div class="mc-sub">Assessments completed</div></div>
+    <div class="metric-card"><div class="mc-label">Strongest Area</div><div class="mc-val" style="font-size:28px;padding-top:6px">${strongestDim.icon}</div><div class="mc-sub">${strongestDim.name} · avg ${Math.max(...dimAvgs)}/20</div></div>
+    <div class="metric-card"><div class="mc-label">Priority Gap</div><div class="mc-val" style="font-size:28px;padding-top:6px">${weakestDim.icon}</div><div class="mc-sub">${weakestDim.name} · avg ${Math.min(...dimAvgs)}/20</div></div>`;
+
+  // Heatmap
+  const hm = document.getElementById('heatmap');
+  hm.innerHTML = '';
+  DIMS.forEach((d,i)=>{
+    const t=tier(dimAvgs[i],20);
+    const pct=Math.round(dimAvgs[i]/20*100);
+    const el=document.createElement('div');
+    el.className=`hm-card`;
+    el.innerHTML=`
+      <div class="hm-icon">${d.icon}</div>
+      <div class="hm-name">${d.s}</div>
+      <div class="hm-score c-${t}">${dimAvgs[i]}</div>
+      <div class="hm-tier c-${t}">${TIERS[t].l}</div>
+      <div class="hm-bar-t"><div class="hm-bar-f bar-${t}" id="hmb${i}"></div></div>`;
+    hm.appendChild(el);
+    setTimeout(()=>{document.getElementById(`hmb${i}`).style.width=pct+'%';},100+i*80);
+  });
+
+  // Distribution
+  const db = document.getElementById('dist-bars');
+  const maxCount = Math.max(...Object.values(tierCounts),1);
+  const tierOrder=[{k:'b',l:'Beginner'},{k:'d',l:'Developing'},{k:'i',l:'Intermediate'},{k:'a',l:'Advanced'}];
+  db.innerHTML='';
+  tierOrder.forEach(({k,l})=>{
+    const c=tierCounts[k];
+    const pct=Math.round(c/maxCount*100);
+    const el=document.createElement('div');
+    el.className='dist-bar-wrap';
+    el.innerHTML=`
+      <div class="dist-bar-count c-${k}">${c}</div>
+      <div class="dist-bar-fill bar-${k}" id="dstb-${k}" style="height:0px"></div>
+      <div class="dist-bar-label">${l}</div>`;
+    db.appendChild(el);
+    setTimeout(()=>{document.getElementById(`dstb-${k}`).style.height=Math.max(pct*1.2,4)+'px';},200);
+  });
+
+  // Department breakdown
+  const depts={};
+  STUDENTS.forEach(s=>{
+    const dept=s.dept||'Other';
+    if(!depts[dept])depts[dept]={students:[],name:dept};
+    depts[dept].students.push(s);
+  });
+  const deptList=Object.values(depts);
+  const dg=document.getElementById('dept-grid');
+  dg.innerHTML='';
+  document.getElementById('dept-count-tag').textContent=`${deptList.length} departments`;
+  deptList.forEach(dept=>{
+    const n=dept.students.length;
+    const avg=Math.round(dept.students.reduce((s,st)=>s+st.total,0)/n);
+    const t=tier(avg,100);
+    const dDimAvgs=DIMS.map((_,i)=>Math.round(dept.students.reduce((s,st)=>s+st.ds[i],0)/n));
+    const card=document.createElement('div');
+    card.className='dept-card';
+    card.innerHTML=`
+      <div class="dept-name">${dept.name}</div>
+      <div class="dept-meta">${n} participant${n>1?'s':''} · ${COMPANY.industry||''}</div>
+      <div class="dept-score c-${t}">${avg}/100</div>
+      <div class="dept-bar-t"><div class="dept-bar-f bar-${t}" id="dpb-${dept.name.replace(/\s/g,'_')}" style="width:0%"></div></div>
+      <div class="dept-dims">
+        ${DIMS.map((d,i)=>`<div class="dept-dim-row">
+          <span class="dept-dim-name">${d.icon} ${d.s}</span>
+          <span class="dept-dim-score c-${tier(dDimAvgs[i],20)}">${dDimAvgs[i]}/20</span>
+        </div>`).join('')}
+      </div>`;
+    dg.appendChild(card);
+    setTimeout(()=>{const el=document.getElementById(`dpb-${dept.name.replace(/\s/g,'_')}`);if(el)el.style.width=avg+'%';},200);
+  });
+
+  // Student table
+  const st=document.getElementById('student-table');
+  st.innerHTML='';
+  [...STUDENTS].sort((a,b)=>b.total-a.total).forEach(s=>{
+    const t=tier(s.total);
+    const row=document.createElement('div');
+    row.className='t-row';
+    row.innerHTML=`
+      <div class="tc"><div class="tc-name">${s.fn} ${s.ln}</div></div>
+      <div class="tc"><div class="tc-role">${s.title}</div></div>
+      <div class="tc"><div class="tc-role">${s.dept||'—'}</div></div>
+      <div class="tc"><span class="score-chip bg-${t} c-${t}">${s.total}/100</span></div>
+      ${s.ds.map((d,i)=>`<div class="tc"><span style="font-family:var(--font-m);font-size:11px;color:${TIER_COLORS[tier(d,20)]}">${d}</span></div>`).join('')}`;
+    st.appendChild(row);
+  });
+}
+
+// ──────────────────────────────────────
+// GENERATE COMPANY REPORT (Claude API)
+// ──────────────────────────────────────
+async function generateCompanyReport() {
+  if(STUDENTS.length===0){alert('Add students first.');return;}
+  document.getElementById('gen-overlay').classList.add('on');
+
+  const n=STUDENTS.length;
+  const avgTotal=Math.round(STUDENTS.reduce((s,st)=>s+st.total,0)/n);
+  const coTier=tier(avgTotal,100);
+  const dimAvgs=DIMS.map((_,i)=>Math.round(STUDENTS.reduce((s,st)=>s+st.ds[i],0)/n));
+  const tierCounts={b:0,d:0,i:0,a:0};
+  STUDENTS.forEach(s=>tierCounts[tier(s.total)]++);
+  const weakest=[...DIMS.map((d,i)=>({name:d.name,avg:dimAvgs[i]}))].sort((a,b)=>a.avg-b.avg).slice(0,3);
+  const strongest=[...DIMS.map((d,i)=>({name:d.name,avg:dimAvgs[i]}))].sort((a,b)=>b.avg-a.avg)[0];
+
+  const depts={};
+  STUDENTS.forEach(s=>{const d=s.dept||'Other';if(!depts[d])depts[d]=[];depts[d].push(s);});
+  const deptSummary=Object.entries(depts).map(([d,ss])=>({dept:d,n:ss.length,avg:Math.round(ss.reduce((s,st)=>s+st.total,0)/ss.length)})).sort((a,b)=>a.avg-b.avg);
+
+  const senioritySplit={exec:0,dir:0,mgr:0,ic:0};
+  STUDENTS.forEach(s=>{
+    const t=(s.title||'').toLowerCase();
+    if(t.includes('chief')||t.includes('ceo')||t.includes('cfo')||t.includes('cto')||t.includes('coo'))senioritySplit.exec++;
+    else if(t.includes('head')||t.includes('vp')||t.includes('director'))senioritySplit.dir++;
+    else if(t.includes('manager')||t.includes('lead'))senioritySplit.mgr++;
+    else senioritySplit.ic++;
+  });
+
+  document.getElementById('gen-sub').textContent = 'Generating with Claude AI…';
+
+  const prompt=`You are a senior AI strategy consultant preparing an executive-grade company AI readiness report for a corporate client. This report will be presented to C-suite leadership. Write with gravitas, precision, and clear strategic insight.
+
+═══ COMPANY CONTEXT ═══
+Company: ${COMPANY.name}
+Industry: ${COMPANY.industry}
+Cohort: ${COMPANY.cohort||'Executive AI Programme'}
+Assessment Date: ${new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long'})}
+
+═══ COHORT OVERVIEW ═══
+Total Participants: ${n}
+Overall Company Score: ${avgTotal}/100
+Company Readiness Tier: ${TIERS[coTier].l}
+Score Distribution: Beginner (${tierCounts.b}), Developing (${tierCounts.d}), Intermediate (${tierCounts.i}), Advanced (${tierCounts.a})
+
+Seniority Mix:
+- C-Suite / Executive: ${senioritySplit.exec}
+- Director / VP / Head: ${senioritySplit.dir}
+- Manager / Lead: ${senioritySplit.mgr}
+- Individual Contributor: ${senioritySplit.ic}
+
+═══ DIMENSION AVERAGES (out of 20) ═══
+${DIMS.map((d,i)=>`${d.name}: ${dimAvgs[i]}/20 (${TIERS[tier(dimAvgs[i],20)].l})`).join('\n')}
+
+Weakest Dimensions: ${weakest.map(w=>`${w.name} (${w.avg}/20)`).join(', ')}
+Strongest Dimension: ${strongest.name} (${strongest.avg}/20)
+
+═══ DEPARTMENT BREAKDOWN ═══
+${deptSummary.map(d=>`${d.dept}: ${d.n} people, avg ${d.avg}/100 (${TIERS[tier(d.avg,100)].l})`).join('\n')}
+
+Generate a comprehensive company AI readiness report as JSON with this exact structure:
+
+{
+  "executiveSummary": "4-5 sentences. Address ${COMPANY.name} specifically. Reference the ${TIERS[coTier].l} tier score of ${avgTotal}/100. Contextualise against what this means for a ${COMPANY.industry} organisation. Mention the score spread across the cohort. Use executive-grade language — this will be read by a CHRO or CEO.",
+
+  "keyFindings": [
+    "Finding 1: Specific, evidence-based insight about the cohort's readiness profile",
+    "Finding 2: About the most critical dimension gap and its business implications",
+    "Finding 3: About the distribution of readiness across seniority or departments",
+    "Finding 4: About the risk or opportunity this readiness level creates for ${COMPANY.name} specifically",
+    "Finding 5: About what best-in-class looks like vs where the organisation is today"
+  ],
+
+  "dimensionDeepDive": "3-4 sentences analysing the pattern across the 5 dimensions. Which combination of strengths and weaknesses is most significant? What does the gap between ${strongest.name} (${strongest.avg}/20) and ${weakest[0].name} (${weakest[0].avg}/20) tell us about this organisation's AI journey?",
+
+  "departmentInsights": "2-3 sentences about the department-level variation. Identify which departments require most urgent intervention and what that means for rollout strategy.",
+
+  "riskAssessment": "3-4 sentences. What are the top 2-3 organisational AI risks given this readiness profile? Be specific to ${COMPANY.industry} where relevant — regulatory risk, competitive risk, talent risk, or operational risk.",
+
+  "strategicRecommendations": [
+    {
+      "priority": "Immediate (0–3 months)",
+      "title": "Action-oriented title",
+      "rationale": "2-3 sentences. Specific, actionable. Reference the specific dimension gap and department context. Suggest concrete first steps."
+    },
+    {
+      "priority": "Short-term (3–6 months)",
+      "title": "Action-oriented title",
+      "rationale": "2-3 sentences."
+    },
+    {
+      "priority": "Medium-term (6–12 months)",
+      "title": "Action-oriented title",
+      "rationale": "2-3 sentences."
+    }
+  ],
+
+  "nexusRecommendation": "2-3 sentences. Explain specifically how the Nexus AI Native Foundation programme addresses ${COMPANY.name}'s readiness profile. Reference the weakest dimensions, the seniority mix, and the ${COMPANY.industry} context. Make this feel like a tailored recommendation, not a generic pitch.",
+
+  "benchmarkContext": "2 sentences putting ${avgTotal}/100 in context — how does this compare to what you'd expect from a ${TIERS[coTier].l}-tier organisation in ${COMPANY.industry}? What does reaching the next tier (${TIERS[coTier==='a'?'a':coTier==='i'?'a':coTier==='d'?'i':'d'].l}) require?"
+}
+
+Return ONLY valid JSON. No preamble, no markdown.`;
+
+  let rd;
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+    });
+    const data=await res.json();
+    const text=data.content?.filter(c=>c.type==='text').map(c=>c.text).join('')||'';
+    rd=JSON.parse(text.replace(/```json|```/g,'').trim());
+  } catch(e) {
+    rd=fallbackReport(avgTotal, coTier, dimAvgs, weakest, strongest, deptSummary);
+  }
+
+  document.getElementById('gen-overlay').classList.remove('on');
+  renderCompanyReport(rd, avgTotal, coTier, dimAvgs);
+}
+
+function fallbackReport(avgTotal, coTier, dimAvgs, weakest, strongest, deptSummary) {
+  return {
+    executiveSummary:`${COMPANY.name} achieves a company-wide AI readiness score of ${avgTotal}/100, placing the organisation at the ${TIERS[coTier].l} tier. Across ${STUDENTS.length} participants from ${COMPANY.cohort||'this cohort'}, the assessment reveals a clear pattern: relative strength in ${strongest.name} and the most significant opportunity in ${weakest[0].name}. This profile is consistent with a ${COMPANY.industry} organisation that has begun AI adoption but has not yet systematised governance, data infrastructure, and strategic alignment at the institutional level.`,
+    keyFindings:[
+      `${TIERS[coTier].l} overall tier (${avgTotal}/100) indicates foundational AI awareness is present but systematic deployment readiness is incomplete.`,
+      `${weakest[0].name} is the most critical gap at ${weakest[0].avg}/20 — addressing this dimension would have the highest leverage on overall company score.`,
+      `Score dispersion across the cohort suggests inconsistent AI exposure across functions, creating uneven adoption potential.`,
+      `At this readiness level, ${COMPANY.name} faces risk of falling behind peers who are systematising AI deployment more rapidly.`,
+      `Best-in-class ${COMPANY.industry} organisations are scoring 70+ with strong governance and data infrastructure as the distinguishing features.`
+    ],
+    dimensionDeepDive:`The ${strongest.avg}/20 in ${strongest.name} versus ${weakest[0].avg}/20 in ${weakest[0].name} reveals a common pattern: technical and strategic awareness has outpaced the organisational infrastructure needed to deploy AI at scale. The middle three dimensions — workflow, data, and governance — show the compounding effect of this gap.`,
+    departmentInsights:`${deptSummary[0]?.dept||'The lowest-scoring department'} requires the most immediate intervention, while higher-scoring departments can serve as internal champions for peer learning. A tiered training approach, starting with lagging departments, would maximise return on investment.`,
+    riskAssessment:`At the ${TIERS[coTier].l} level in ${COMPANY.industry}, the primary risk is regulatory: without formal AI governance, ${COMPANY.name} is exposed to compliance risk as regulators increasingly scrutinise AI use in financial processes. A secondary risk is competitive: peers investing in AI systematically at this stage will compound advantages that are difficult to close in 12–18 months.`,
+    strategicRecommendations:[
+      {priority:'Immediate (0–3 months)',title:`Establish AI Governance Foundation`,rationale:`${weakest[0].name} is the single highest-leverage intervention. Establish a formal AI usage policy, begin model documentation, and create an internal AI review process. This removes the primary regulatory risk and creates the infrastructure needed for confident scaling.`},
+      {priority:'Short-term (3–6 months)',title:`Structured AI Literacy Programme`,rationale:`The score distribution suggests significant variation across departments. A structured upskilling programme targeting the bottom quartile — with content calibrated to ${COMPANY.industry} use cases — would raise the floor and create a common organisational language for AI adoption.`},
+      {priority:'Medium-term (6–12 months)',title:`AI Integration Roadmap & Centre of Excellence`,rationale:`Nominate internal AI champions from higher-scoring departments and task them with building a roadmap for AI integration in the 2–3 highest-leverage workflows. This creates momentum and measurable business value to sustain C-suite support.`}
+    ],
+    nexusRecommendation:`The Nexus AI Native Foundation programme is designed specifically for ${TIERS[coTier].l}-tier organisations in regulated sectors like ${COMPANY.industry}. The programme directly addresses ${weakest[0].name} and ${weakest[1]?.name||'data governance'} — the two most critical gaps — through governance-aware, role-specific curriculum that builds applied competency rather than theoretical awareness.`,
+    benchmarkContext:`A score of ${avgTotal}/100 at the ${TIERS[coTier].l} level in ${COMPANY.industry} is consistent with organisations that have begun AI exploration but not yet achieved systematic deployment. Reaching the ${coTier==='b'?'Developing':coTier==='d'?'Intermediate':coTier==='i'?'Advanced':'Advanced'} tier requires primarily closing the governance and data readiness gaps, which typically takes 6–12 months with structured intervention.`
+  };
+}
+
+function renderCompanyReport(rd, avgTotal, coTier, dimAvgs) {
+  const card=document.getElementById('crep-card');
+  document.getElementById('rep-gen-tag').style.display='inline-flex';
+  document.getElementById('btn-gen-rep').style.display='none';
+
+  card.innerHTML=`
+    <div class="crep-top">
+      <span style="font-family:var(--font-m);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">${COMPANY.name} · Company AI Readiness Report · ${new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long'})}</span>
+      <span class="tag tg">AI-Generated</span>
+    </div>
+    <div class="crep-body">
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">Executive Summary</div>
+        <div class="crep-narrative"><p>${rd.executiveSummary}</p></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Key Findings</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${(rd.keyFindings||[]).map((f,i)=>`
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--elevated);border-radius:var(--r)">
+              <span style="font-family:var(--font-m);font-size:10px;color:var(--gold);min-width:20px;padding-top:2px">${String(i+1).padStart(2,'0')}</span>
+              <span style="font-size:13px;line-height:1.6;color:rgba(232,236,244,0.8)">${f}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px">
+        <div style="background:var(--elevated);border-radius:var(--r);padding:20px">
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">Dimension Analysis</div>
+          <div class="crep-narrative" style="font-size:13px"><p>${rd.dimensionDeepDive}</p></div>
+        </div>
+        <div style="background:var(--elevated);border-radius:var(--r);padding:20px">
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">Department Insights</div>
+          <div class="crep-narrative" style="font-size:13px"><p>${rd.departmentInsights}</p></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:28px;padding:20px;background:var(--red-bg);border:1px solid rgba(192,90,70,0.2);border-radius:var(--r)">
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">⚠ Risk Assessment</div>
+        <div class="crep-narrative" style="font-size:13px"><p>${rd.riskAssessment}</p></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Strategic Recommendations</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${(rd.strategicRecommendations||[]).map((r,i)=>{
+            const colors=['#c9a84c','#3db8b0','#5aab68'];
+            return `<div style="padding:18px 20px;background:var(--elevated);border-radius:var(--r);border-left:3px solid ${colors[i]||'#c9a84c'}">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="font-family:var(--font-m);font-size:9px;color:${colors[i]||'#c9a84c'};text-transform:uppercase;letter-spacing:0.1em">${r.priority}</span>
+              </div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:6px">${r.title}</div>
+              <div style="font-size:12.5px;color:var(--muted);line-height:1.65">${r.rationale}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px">
+        <div style="padding:20px;background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:var(--r)">
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Nexus Recommendation</div>
+          <div style="font-size:13px;color:rgba(232,236,244,0.75);line-height:1.65">${rd.nexusRecommendation}</div>
+        </div>
+        <div style="padding:20px;background:var(--elevated);border-radius:var(--r)">
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Benchmark Context</div>
+          <div style="font-size:13px;color:rgba(232,236,244,0.75);line-height:1.65">${rd.benchmarkContext}</div>
+        </div>
+      </div>
+
+    </div>`;
+}
+
+function resetDashboard(){
+  STUDENTS=[]; COMPANY={name:'',industry:'',cohort:''};
+  document.getElementById('welcome-state').style.display='block';
+  document.getElementById('dashboard-state').style.display='none';
+  document.getElementById('nav-co').textContent='';
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+</script>
+</body>
+</html>
