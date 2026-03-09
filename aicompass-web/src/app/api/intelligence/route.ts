@@ -1,22 +1,10 @@
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
+const deepseek = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY || '',
 });
-
-const INDUSTRY_CONTEXT: Record<string, string> = {
-  'Financial Services': 'You are an expert in financial services AI adoption. Consider banking, insurance, wealth management, and fintech.',
-  'Technology': 'You are an expert in technology sector AI adoption. Consider software, SaaS, hardware, and tech services.',
-  'Healthcare & Life Sciences': 'You are an expert in healthcare AI. Consider pharma, biotech, medical devices, and healthcare delivery.',
-  'Professional Services': 'You are an expert in professional services AI. Consider consulting, legal, accounting, and advisory.',
-  'Energy & Resources': 'You are an expert in energy sector AI. Consider oil & gas, renewables, utilities, and mining.',
-  'Manufacturing': 'You are an expert in manufacturing AI. Consider industrial, automotive, aerospace, and supply chain.',
-  'Government & Public Sector': 'You are an expert in government AI adoption. Consider federal, state, local, and public services.',
-  'Education': 'You are an expert in education AI. Consider K-12, higher ed, edtech, and corporate training.',
-  'Retail & Consumer': 'You are an expert in retail AI. Consider e-commerce, brick-and-mortar, and consumer goods.',
-  'Media & Telecommunications': 'You are an expert in media/telecom AI. Consider content, streaming, telecom, and advertising.',
-};
 
 export async function POST(request: Request) {
   try {
@@ -30,15 +18,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if Anthropic API is available
-    const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
+    // Check if DeepSeek API is available
+    const hasApiKey = !!process.env.DEEPSEEK_API_KEY;
     
     if (!hasApiKey) {
       // Fall back to mock data if no API key
       return NextResponse.json(generateMockIntelligence(body));
     }
 
-    // Simple prompt for faster, cleaner response
+    // Simple prompt for fast response
     const prompt = `Generate 12-category AI readiness data for ${company} (${industry}, ${country}).
     
 Respond with JSON only. Each category: name, fields=[fieldName, fieldValue, source], sources.
@@ -46,32 +34,16 @@ Categories: professionalProfile, companyOverview, companyAIPosture, industryAILa
 Keep fieldValue under 50 chars. Return valid JSON array or object.`;
 
     try {
-      // Use Sonnet 4.6 with minimal thinking for faster response
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        thinking: { type: "enabled", budget_tokens: 1024 },
+      const response = await deepseek.chat.completions.create({
+        model: 'deepseek-chat',
         messages: [
           { role: 'user', content: prompt }
         ],
-        system: `You are a precise JSON generator for an AI readiness assessment tool.
-        
-STRICT JSON RULES:
-1. Output ONLY valid JSON - no markdown, no code blocks, no comments
-2. ALL strings must use double quotes
-3. ALL property names must use double quotes  
-4. No trailing commas
-5. No single quotes anywhere
-6. No unquoted strings
-7. Arrays and objects must be properly closed
-
-Return exactly this JSON structure with these 12 category keys:
-{"professionalProfile":{"fields":[{"fieldName":"","fieldValue":"","source":""}],"sources":[]},"companyOverview":{...},"companyAIPosture":{...},"industryAILandscape":{...},"regulatoryEnvironment":{...},"countryAIPolicy":{...},"competitiveIntelligence":{...},"aiSkillsMarket":{...},"technologyStack":{...},"peerBenchmarks":{...},"recentAIEvents":{...},"skillsCredentials":{...}}
-
-Each category needs 4-5 fields with realistic research-based values.`
+        temperature: 0.7,
+        max_tokens: 2000,
       });
 
-      let text = response.content[0].type === 'text' ? response.content[0].text : '';
+      let text = response.choices[0]?.message?.content || '';
       
       // Clean up any markdown code blocks
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -97,8 +69,8 @@ Each category needs 4-5 fields with realistic research-based values.`
       }
       
       return NextResponse.json(intelligence);
-    } catch (anthropicError: any) {
-      console.error('Anthropic API error:', anthropicError.message);
+    } catch (deepseekError: any) {
+      console.error('DeepSeek API error:', deepseekError.message);
       // Fall back to mock data on API error
       return NextResponse.json(generateMockIntelligence(body));
     }
