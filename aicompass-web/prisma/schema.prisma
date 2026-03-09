@@ -1,0 +1,224 @@
+// Prisma Schema for AI Compass v1.0
+// Generated: March 2026
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER MODEL ====================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  name          String?
+  role          UserRole @default(USER)
+  subscription  SubscriptionTier @default(FREE)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  profile       Profile?
+  assessments   Assessment[]
+  payments      Payment[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PROFESSIONAL
+  TEAM
+  ENTERPRISE
+}
+
+// ==================== PROFILE MODEL ====================
+
+model Profile {
+  id            String    @id @default(cuid())
+  userId        String    @unique @map("user_id")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  jobTitle      String?   @map("job_title")
+  company       String?
+  industry      String?
+  country       String?
+  seniority     String?
+  department    String?
+  cohortCode    String?   @map("cohort_code")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment    Assessment?
+
+  @@map("profiles")
+}
+
+// ==================== ASSESSMENT MODEL ====================
+
+model Assessment {
+  id              String            @id @default(cuid())
+  userId          String            @map("user_id")
+  profileId       String            @unique @map("profile_id")
+  status          AssessmentStatus  @default(STARTED)
+  
+  // Intelligence Data (JSON)
+  intelligence    Json?            @default("{}")
+  
+  // Question Variants
+  variants        Json             @default("[]")
+  
+  // Scores
+  totalScore      Int?             @map("total_score")
+  dimensionScores Int[]            @map("dimension_scores")
+  tier            String?
+  
+  // Timestamps
+  startedAt       DateTime          @default(now()) @map("started_at")
+  completedAt     DateTime?        @map("completed_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile         Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  responses       Response[]
+  report          Report?
+
+  @@map("assessments")
+}
+
+enum AssessmentStatus {
+  STARTED
+  PROFILE_COMPLETE
+  INTELLIGENCE_COLLECTING
+  INTELLIGENCE_COMPLETE
+  VALIDATION_COMPLETE
+  IN_PROGRESS
+  SUBMITTED
+  PAYWALL
+  PAYMENT_COMPLETE
+  COMPLETED
+}
+
+// ==================== RESPONSE MODEL ====================
+
+model Response {
+  id            String    @id @default(cuid())
+  assessmentId  String    @map("assessment_id")
+  questionIndex Int       @map("question_index")
+  answer        Int       // 0-3 (option index)
+  variant       String    // standard/stretch/diagnostic
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, questionIndex])
+  @@map("responses")
+}
+
+// ==================== REPORT MODEL ====================
+
+model Report {
+  id            String    @id @default(cuid())
+  assessmentId  String    @unique @map("assessment_id")
+  reportId      String    @unique @map("report_id") // AIC-2026-XXXXX-CC
+  
+  // Full Report Data (JSON)
+  reportData    Json
+  
+  // Metadata
+  generatedAt   DateTime  @default(now()) @map("generated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+// ==================== COHORT MODEL ====================
+
+model Cohort {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  name          String
+  organization  String?     @map("organization")
+  description   String?
+  maxUsers      Int?        @map("max_users")
+  status        CohortStatus @default(ACTIVE)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  payments      Payment[]
+
+  @@map("cohorts")
+}
+
+enum CohortStatus {
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+// ==================== PAYMENT MODEL ====================
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  cohortId      String?       @map("cohort_id")
+  
+  // Payment Details
+  amount        Int           // in cents
+  currency      String        @default("USD")
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String?       @map("payment_method")
+  
+  // Stripe Data (for future)
+  stripeId      String?       @map("stripe_id")
+  
+  // Timestamps
+  paidAt        DateTime?     @map("paid_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohort        Cohort?        @relation(fields: [cohortId], references: [id])
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ==================== SETTINGS MODEL ====================
+
+model Settings {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         Json
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
