@@ -1,26 +1,32 @@
 'use client';
 
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@compass.ai');
-  const [password, setPassword] = useState('compass2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Demo credentials from HTML spec
-    if (email === 'admin@compass.ai' && password === 'compass2026') {
-      router.push('/admin/dashboard');
-    } else {
-      setError('Invalid credentials. Try admin@compass.ai / compass2026');
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError('Invalid email or password');
       setLoading(false);
+    } else {
+      router.push('/admin/dashboard');
     }
   };
 
@@ -71,8 +77,6 @@ export default function AdminLoginPage() {
                 </button>
               </div>
             </form>
-            
-            <div className="al-demo-creds">Demo: admin@compass.ai · compass2026</div>
           </div>
           
           <button className="al-back" onClick={() => router.push('/')}>← Back to platform</button>
