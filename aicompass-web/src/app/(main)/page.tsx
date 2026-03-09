@@ -208,6 +208,11 @@ export default function LandingPage() {
               <div className="gc-title">Learning Pathway</div>
               <div className="gc-desc">A personalised curriculum recommendation based on your dimension gaps and role context.</div>
             </div>
+            <div className="get-card">
+              <div className="gc-ico">🗺️</div>
+              <div className="gc-title">90-Day Roadmap</div>
+              <div className="gc-desc">A prioritized 90-day action plan with milestones to improve your AI readiness.</div>
+            </div>
           </div>
         </div>
       </section>
@@ -335,6 +340,23 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* FOOTER */}
+      <footer style={{ background: '#0f172a', padding: '40px 20px', textAlign: 'center', marginTop: 20 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#fff', marginBottom: 8 }}>
+            AI <span style={{ color: '#f59e0b' }}>Compass</span>
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 20 }}>
+            © 2026 Nexus FrontierTech. All rights reserved.
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Privacy Policy</a>
+            <a href="/terms" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Terms of Service</a>
+            <a href="mailto:contact@aicompass.ai" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Contact</a>
+          </div>
+        </div>
+      </footer>
 
       {/* Continue Modal */}
       {showModal && (
