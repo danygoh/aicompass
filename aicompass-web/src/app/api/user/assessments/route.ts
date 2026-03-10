@@ -28,7 +28,7 @@ export async function GET() {
 
     const formattedAssessments = assessments.map((a) => ({
       id: a.id,
-      reportId: a.report?.reportId || `AIC-${a.id.slice(0, 8)}`,
+      reportId: a.report ? a.report.reportId : `AIC-${a.id.slice(0, 8)}`,
       totalScore: a.totalScore,
       tier: a.tier,
       status: a.status,

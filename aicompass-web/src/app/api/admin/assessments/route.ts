@@ -18,7 +18,7 @@ export async function GET() {
     });
 
     const formatted = assessments.map(a => ({
-      id: a.reportId || `AIC-${a.id.slice(0, 8)}`,
+      id: `AIC-${a.id.slice(0, 8)}`,
       user: a.user?.name || a.user?.profile?.firstName + ' ' + a.user?.profile?.lastName || 'Anonymous',
       company: a.user?.profile?.company || 'Unknown',
       score: a.totalScore,
