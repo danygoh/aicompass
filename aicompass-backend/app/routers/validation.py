@@ -6,23 +6,9 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 from app.models import Assessment
-from app.config import get_settings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from app.db import get_db
 
 router = APIRouter(prefix="/api/validation", tags=["validation"])
-
-settings = get_settings()
-engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 class ValidationData(BaseModel):

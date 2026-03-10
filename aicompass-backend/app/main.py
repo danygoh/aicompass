@@ -2,6 +2,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import assessment, intelligence, validation, cohort, auth, payments
+from app.config import get_settings
+
+settings = get_settings()
 
 app = FastAPI(
     title="AI Compass API",
@@ -9,10 +12,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
+# CORS - origins configured via ALLOWED_ORIGINS env var (comma-separated)
+allowed_origins = [o.strip() for o in settings.allowed_origins.split(",")]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

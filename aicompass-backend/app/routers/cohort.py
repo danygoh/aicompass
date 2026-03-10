@@ -7,23 +7,9 @@ import secrets
 import string
 
 from app.models import Company, Assessment
-from app.config import get_settings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from app.db import get_db
 
 router = APIRouter(prefix="/api/cohort", tags=["cohort"])
-
-settings = get_settings()
-engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def generate_code(length=8):
@@ -101,7 +87,8 @@ def get_cohort_info(code: str, db: Session = Depends(get_db)):
 
 
 @router.post("/join")
-def join_cohort(code: str, db: Session = Depends(get_db)):
+def join_cohort(data: JoinCohortRequest, db: Session = Depends(get_db)):
+    code = data.code
     """Check if user can join cohort (for pre-validation)"""
     
     company = db.query(Company).filter(Company.cohort_code == code).first()

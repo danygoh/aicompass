@@ -4,24 +4,10 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.models import Assessment
-from app.config import get_settings
 from app.services.intelligence import collect_intelligence, get_intelligence_summary
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from app.db import get_db
 
 router = APIRouter(prefix="/api/intelligence", tags=["intelligence"])
-
-settings = get_settings()
-engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post("/collect/{assessment_id}")

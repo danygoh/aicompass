@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+async function requireAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any)?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return null;
+}
 
 export async function GET() {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
   try {
     const cohorts = await prisma.cohort.findMany({
       orderBy: { createdAt: 'desc' },
@@ -16,10 +27,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await request.json();
     const { name, code, organization, description, maxUsers } = body;
-    
+
     const cohort = await prisma.cohort.create({
       data: {
         name,
@@ -29,7 +43,7 @@ export async function POST(request: Request) {
         maxUsers: maxUsers ? parseInt(maxUsers) : null,
       },
     });
-    
+
     return NextResponse.json({ cohort });
   } catch (error: any) {
     console.error('Create cohort error:', error);
@@ -38,10 +52,13 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await request.json();
     const { id, name, code, organization, description, maxUsers, status } = body;
-    
+
     const cohort = await prisma.cohort.update({
       where: { id },
       data: {
@@ -53,7 +70,7 @@ export async function PUT(request: Request) {
         status,
       },
     });
-    
+
     return NextResponse.json({ cohort });
   } catch (error: any) {
     console.error('Update cohort error:', error);
@@ -62,16 +79,19 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Missing cohort ID' }, { status: 400 });
     }
-    
+
     await prisma.cohort.delete({ where: { id } });
-    
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Delete cohort error:', error);

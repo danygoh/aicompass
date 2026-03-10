@@ -10,24 +10,9 @@ from app.schemas import (
     AnswerData, assessment_to_dict
 )
 from app.services.report import generate_ai_report
-from app.config import get_settings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from app.db import get_db, engine
 
 router = APIRouter(prefix="/api/assessment", tags=["assessment"])
-
-settings = get_settings()
-engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 
 # Create tables on startup
 Base.metadata.create_all(bind=engine)
@@ -242,7 +227,6 @@ def save_answer(assessment_id: UUID, answer: AnswerData, db: Session = Depends(g
     db.refresh(assessment)
     
     return {"status": "saved", "question_id": answer.question_id, "total_answers": len(current_answers)}
-    return {"status": "saved", "question_id": answer.question_id, "answer": answer.answer}
 
 
 @router.post("/{assessment_id}/submit")

@@ -8,8 +8,9 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     resend_api_key: str = ""
     tavily_api_key: str = ""
-    secret_key: str = "dev-secret-change-in-production"
-    
+    secret_key: str
+    allowed_origins: str = "*"
+
     class Config:
         env_file = ".env"
 

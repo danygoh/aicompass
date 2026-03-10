@@ -76,7 +76,7 @@ Return ONLY valid JSON, no markdown formatting."""
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=4000,
             temperature=0.7,
             system="You are an expert AI business consultant. Generate personalized, actionable reports.",

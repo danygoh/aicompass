@@ -10,7 +10,7 @@ Base = declarative_base()
 
 
 def generate_uuid():
-    return str(uuid.uuid4())
+    return uuid.uuid4()
 
 
 class Company(Base):

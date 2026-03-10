@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
@@ -26,7 +24,7 @@ export async function GET(request: Request) {
       profile: assessment.profile ? {
         firstName: assessment.profile.firstName,
         lastName: assessment.profile.lastName,
-        email: assessment.profile.email,
+        email: null,
         jobTitle: assessment.profile.jobTitle,
         company: assessment.profile.company,
         industry: assessment.profile.industry,
