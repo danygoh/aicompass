@@ -52,3 +52,43 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }
+
+export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any)?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { name, email, password, company, tier } = body;
+
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        profile: {
+          create: {
+            firstName: name?.split(' ')[0] || '',
+            lastName: name?.split(' ').slice(1).join(' ') || '',
+            company: company || '',
+          }
+        }
+      },
+      include: { profile: true }
+    });
+
+    return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name } });
+  } catch (error: any) {
+    console.error('Create user error:', error);
+    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+  }
+}
