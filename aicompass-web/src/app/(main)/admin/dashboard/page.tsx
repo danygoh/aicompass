@@ -368,7 +368,7 @@ Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
                     <tr key={r.id}>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><div style={{fontWeight:600,color:'#000'}}>{r.userName}</div><div style={{fontSize:11,color:'#6b7280'}}>{r.email}</div></td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.company || '-'}</td>
-                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000',fontWeight:600,color:'#f59e0b'}}>{r.totalScore}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',fontWeight:600,color:'#f59e0b'}}>{r.totalScore}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.tier || '-'}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '-'}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><button onClick={()=>downloadReport(r)} style={{padding:'4px 8px',background:'#0d9488',border:'none',borderRadius:4,color:'#fff',cursor:'pointer'}}>Download</button></td>
