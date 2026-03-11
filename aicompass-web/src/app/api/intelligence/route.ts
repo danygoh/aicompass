@@ -26,12 +26,23 @@ export async function POST(request: Request) {
       return NextResponse.json(generateMockIntelligence(body));
     }
 
-    // Simple prompt for fast response
-    const prompt = `Generate 12-category AI readiness data for ${company} (${industry}, ${country}).
-    
-Respond with JSON only. Each category: name, fields=[fieldName, fieldValue, source], sources.
+    // Enhanced prompt for detailed, expressive responses
+    const prompt = `Generate 12-category AI readiness intelligence for ${company}, a ${seniority} in the ${industry} industry based in ${country}.
+
+Respond with JSON only. Each category must include:
+- name: category identifier
+- fields: array of {fieldName, fieldValue, source} where fieldValue provides 2-3 sentences of meaningful, actionable insight
+- sources: array of source names
+
 Categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
-Keep fieldValue under 50 chars. Return valid JSON array or object.`;
+
+IMPORTANT: 
+- Provide substantive fieldValue content (2-3 sentences each) - not just keywords
+- Include specific numbers, percentages, or timelines where relevant
+- Make insights actionable and relevant to ${industry} in ${country}
+- Prioritize practical takeaways over generic statements
+
+Return valid JSON array or object.`;
 
     try {
       const response = await deepseek.chat.completions.create({
@@ -40,7 +51,7 @@ Keep fieldValue under 50 chars. Return valid JSON array or object.`;
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000,
       });
 
       let text = response.choices[0]?.message?.content || '';

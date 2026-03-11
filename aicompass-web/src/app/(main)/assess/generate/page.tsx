@@ -88,6 +88,9 @@ export default function GeneratePage() {
       await new Promise(r => setTimeout(r, 600));
     }
 
+    // Additional delay for better UX (allow user to absorb the process)
+    await new Promise(r => setTimeout(r, 3000));
+
     // Generate report via API
     try {
       const payload = {
