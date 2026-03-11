@@ -114,14 +114,10 @@ export async function register(data: { email: string; password: string; name: st
 }
 
 export async function login(email: string, password: string) {
-  const formData = new URLSearchParams();
-  formData.append('username', email);
-  formData.append('password', password);
-  
-  const res = await fetch(`${API_BASE}/auth/signin`, {
+  const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: formData
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
   });
   if (!res.ok) throw new Error('Login failed');
   return res.json();
