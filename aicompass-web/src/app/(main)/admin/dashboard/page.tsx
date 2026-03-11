@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-type Tab = 'overview' | 'users' | 'cohorts' | 'payments' | 'plans' | 'settings' | 'api';
+type Tab = 'overview' | 'users' | 'reports' | 'cohorts' | 'payments' | 'plans' | 'settings' | 'api';
 
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
