@@ -1,8 +1,9 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && npx prisma generate && npm run build",
-    "startCommand": "npm start"
+    "buildCommand": "npm install --no-cache && npx prisma generate && npm run build",
+    "startCommand": "npm start",
+    "noCache": true
   },
   "deploy": {
     "numReplicas": 1,
