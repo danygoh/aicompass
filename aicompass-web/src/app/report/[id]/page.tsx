@@ -37,7 +37,7 @@ export default function ReportPage() {
 
   const loadReport = async () => {
     try {
-      const data = await getReport(id);
+      const data = await getReport(id!);
       setReport(data);
     } catch (err) {
       setError('Failed to load report');

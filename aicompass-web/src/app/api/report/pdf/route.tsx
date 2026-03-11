@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       dimensionScores: dimensionScores || [0, 0, 0, 0, 0]
     });
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="AI-Compass-Report-${profile.lastName || 'Report'}.pdf"`,
