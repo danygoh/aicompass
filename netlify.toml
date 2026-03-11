@@ -5,9 +5,3 @@
 
 [build.environment]
   NODE_VERSION = "20"
-
-# Next.js SPA fallback
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
