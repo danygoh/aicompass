@@ -34,17 +34,23 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const formattedUsers = users.map(user => ({
-      id: user.id,
-      name: user.name || user.profile?.firstName + ' ' + user.profile?.lastName || 'Unknown',
-      email: user.email,
-      company: user.profile?.company || '',
-      industry: user.profile?.industry || '',
-      tier: user.profile?.cohortCode ? 'Cohort' : (user.assessments[0]?.tier || 'Free'),
-      joinedAt: user.createdAt.toISOString().split('T')[0],
-      lastActive: user.updatedAt.toISOString().split('T')[0],
-      assessments: user.assessments.length,
-    }));
+    const formattedUsers = users.map(user => {
+      const completedAssessment = user.assessments.find(a => a.status === 'COMPLETED');
+      return {
+        id: user.id,
+        name: user.name || user.profile?.firstName + ' ' + user.profile?.lastName || 'Unknown',
+        email: user.email,
+        company: user.profile?.company || '',
+        industry: user.profile?.industry || '',
+        tier: user.profile?.cohortCode ? 'Cohort' : (completedAssessment?.tier || 'Free'),
+        joinedAt: user.createdAt.toISOString(),
+        lastLogin: user.updatedAt.toISOString(),
+        lastActive: user.updatedAt.toISOString(),
+        assessmentCount: user.assessments.length,
+        lastCompletedAt: completedAssessment?.completedAt || null,
+        lastScore: completedAssessment?.totalScore || null,
+      };
+    });
 
     return NextResponse.json({ users: formattedUsers });
   } catch (error: any) {

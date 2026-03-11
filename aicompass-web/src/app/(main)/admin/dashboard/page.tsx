@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
   const [assessments, setAssessments] = useState<any[]>([]);
   const [cohorts, setCohorts] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedCohort, setSelectedCohort] = useState<any>(null);
@@ -34,16 +35,18 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [u, a, c, p] = await Promise.all([
+      const [u, a, c, p, r] = await Promise.all([
         fetch('/api/admin/users').then(r => r.json()),
         fetch('/api/admin/assessments').then(r => r.json()),
         fetch('/api/admin/cohorts').then(r => r.json()),
         fetch('/api/admin/payments').then(r => r.json()),
+        fetch('/api/admin/reports').then(r => r.json()),
       ]);
       setUsers(u.users || []);
       setAssessments(a.assessments || []);
       setCohorts(c.cohorts || []);
       setPayments(p.payments || []);
+      setReports(r.reports || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -60,7 +63,7 @@ export default function AdminDashboardPage() {
   };
 
   const recentActivity = [...users].sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()).slice(0, 20);
-  const latestReports = completedAssessments.sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()).slice(0, 20);
+  const latestReports = [...reports].sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()).slice(0, 20);
 
   // Monthly revenue
   const monthlyRevenue = payments.filter(p => p.status === 'completed').reduce((acc: any, p) => {
@@ -117,14 +120,75 @@ export default function AdminDashboardPage() {
   const createCohort = async () => { const name = prompt('Cohort name:'); const code = prompt('Code:'); if (name && code) { await fetch('/api/admin/cohorts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, code }) }); loadData(); }};
 
   const downloadUsersXLS = () => {
-    const headers = ['Name', 'Email', 'Company', 'Industry', 'Tier', 'Joined', 'Last Active', 'Assessments'];
-    const rows = users.map(u => [u.name, u.email, u.company, u.industry, u.tier, u.joinedAt, u.lastActive, u.assessments]);
+    const headers = ['Name', 'Email', 'Company', 'Industry', 'Tier', 'Joined', 'Last Login', 'Last Completed', 'Score', 'Assessments'];
+    const rows = users.map(u => [
+      u.name, 
+      u.email, 
+      u.company, 
+      u.industry, 
+      u.tier, 
+      new Date(u.joinedAt).toLocaleDateString(),
+      u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-',
+      u.lastCompletedAt ? new Date(u.lastCompletedAt).toLocaleString() : '-',
+      u.lastScore || '-',
+      u.assessmentCount
+    ]);
     const csv = [headers, ...rows].map(row => row.join('\t')).join('\n');
     const blob = new Blob([csv], { type: 'text/tab-separated-values' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'users.xls';
+    a.click();
+  };
+
+  const downloadReport = (report: any) => {
+    const content = `
+AI COMPASS ASSESSMENT REPORT
+============================
+Generated: ${new Date().toLocaleString()}
+
+USER INFORMATION
+-----------------
+Name: ${report.userName}
+Email: ${report.email}
+Company: ${report.company}
+Industry: ${report.industry}
+
+ASSESSMENT RESULTS
+------------------
+Score: ${report.totalScore}/100
+Tier: ${report.tier}
+Completed: ${report.completedAt ? new Date(report.completedAt).toLocaleString() : 'N/A'}
+
+${report.dimensionScores ? `DIMENSION SCORES
+-----------------
+AI Literacy: ${report.dimensionScores[0] || 0}/20
+Strategy & Vision: ${report.dimensionScores[1] || 0}/20
+Data & Infrastructure: ${report.dimensionScores[2] || 0}/20
+Culture & Skills: ${report.dimensionScores[3] || 0}/20
+Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
+    `.trim();
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `report-${report.userName.replace(/\s+/g, '-')}-${new Date(report.completedAt).toISOString().split('T')[0]}.txt`;
+    a.click();
+  };
+
+  const downloadAllReportsXLS = () => {
+    const headers = ['Name', 'Email', 'Company', 'Industry', 'Score', 'Tier', 'Completed'];
+    const rows = reports.map(r => [
+      r.userName, r.email, r.company, r.industry, r.totalScore, r.tier, r.completedAt ? new Date(r.completedAt).toLocaleString() : '-'
+    ]);
+    const csv = [headers, ...rows].map(row => row.join('\t')).join('\n');
+    const blob = new Blob([csv], { type: 'text/tab-separated-values' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'all-reports.xls';
     a.click();
   };
 
@@ -146,6 +210,7 @@ export default function AdminDashboardPage() {
           {[
             {id:'overview',icon:'📊',label:'Overview',badge:0},
             {id:'users',icon:'👥',label:'Users',badge:users.length},
+            {id:'reports',icon:'📄',label:'Reports',badge:reports.length},
             {id:'cohorts',icon:'🏫',label:'Cohorts',badge:cohorts.length},
             {id:'payments',icon:'💳',label:'Payments',badge:0},
             {id:'plans',icon:'📦',label:'Plans & Pricing',badge:0},
@@ -164,6 +229,7 @@ export default function AdminDashboardPage() {
         <h1 style={{fontSize:24,fontWeight:600,color:'#1e3a5f',margin:0,marginBottom:24}}>
           {activePanel==='overview'&&'Overview'}
           {activePanel==='users'&&'Users'}
+          {activePanel==='reports'&&'Reports'}
           {activePanel==='cohorts'&&(selectedCohort?selectedCohort.name:'Cohorts')}
           {activePanel==='payments'&&'Payments'}
           {activePanel==='plans'&&'Plans & Pricing'}
@@ -267,21 +333,50 @@ export default function AdminDashboardPage() {
 
             <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
               <table style={{width:'100%',borderCollapse:'collapse'}}>
-                <thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>USER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>COMPANY</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>INDUSTRY</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>TIER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>JOINED</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ACTIONS</th></tr></thead>
+                <thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>USER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>COMPANY</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>TIER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>JOINED</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>LAST LOGIN</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>LAST COMPLETED</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>SCORE</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ACTIONS</th></tr></thead>
                 <tbody>
                   {filteredUsers.map(u=>(
                     <tr key={u.id}>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}>{editingUser?.id===u.id?<input value={editingUser.name} onChange={e=>setEditingUser({...editingUser,name:e.target.value})} style={{padding:4,border:'1px solid #e5e7eb',borderRadius:4,color:'#000'}} />:<><div style={{fontWeight:600,color:'#000'}}>{u.name}</div><div style={{fontSize:11,color:'#6b7280'}}>{u.email}</div></>}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{u.company || '-'}</td>
-                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{u.industry || '-'}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}>{editingUser?.id===u.id?<select value={editingUser.tier} onChange={e=>setEditingUser({...editingUser,tier:e.target.value})}><option>FREE</option><option>PROFESSIONAL</option><option>TEAM</option><option>ENTERPRISE</option></select>:<span style={{fontSize:11,padding:'4px 8px',background:'#f3f4f6',borderRadius:4,color:'#000'}}>{u.tier||'FREE'}</span>}</td>
-                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{u.joinedAt}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000',fontSize:12}}>{new Date(u.joinedAt).toLocaleDateString()}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000',fontSize:12}}>{u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : '-'}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000',fontSize:12}}>{u.lastCompletedAt ? new Date(u.lastCompletedAt).toLocaleDateString() : '-'}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000',fontSize:12,fontWeight:600,color:u.lastScore ? '#f59e0b':'#6b7280'}}>{u.lastScore || '-'}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}>{editingUser?.id===u.id?<><button onClick={saveUser} style={{padding:'4px 8px',background:'#0d9488',border:'none',borderRadius:4,color:'#fff',cursor:'pointer',marginRight:4}}>Save</button><button onClick={()=>setEditingUser(null)} style={{padding:'4px 8px',border:'1px solid #e5e7eb',borderRadius:4,cursor:'pointer'}}>Cancel</button></>:<><button onClick={()=>setEditingUser({id:u.id,name:u.name,tier:u.tier||'FREE'})} style={{padding:'4px 8px',border:'1px solid #e5e7eb',borderRadius:4,cursor:'pointer',marginRight:4,color:'#000'}}>Edit</button><button onClick={()=>deleteUser(u.id)} style={{padding:'4px 8px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Delete</button></>}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {filteredUsers.length===0&&<div style={{padding:40,textAlign:'center',color:'#6b7280'}}>No users found</div>}
+            </div>
+          </div>
+        )}
+
+        {/* REPORTS */}
+        {activePanel==='reports'&&(
+          <div>
+            <div style={{display:'flex',gap:12,marginBottom:16}}>
+              <button onClick={downloadAllReportsXLS} style={{padding:'10px 20px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:8,cursor:'pointer'}}>Download All (XLS)</button>
+            </div>
+            <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>USER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>COMPANY</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>SCORE</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>TIER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>COMPLETED</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ACTIONS</th></tr></thead>
+                <tbody>
+                  {reports.map(r=>(
+                    <tr key={r.id}>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><div style={{fontWeight:600,color:'#000'}}>{r.userName}</div><div style={{fontSize:11,color:'#6b7280'}}>{r.email}</div></td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.company || '-'}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000',fontWeight:600,color:'#f59e0b'}}>{r.totalScore}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.tier || '-'}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '-'}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><button onClick={()=>downloadReport(r)} style={{padding:'4px 8px',background:'#0d9488',border:'none',borderRadius:4,color:'#fff',cursor:'pointer'}}>Download</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {reports.length===0&&<div style={{padding:40,textAlign:'center',color:'#6b7280'}}>No reports available</div>}
             </div>
           </div>
         )}
