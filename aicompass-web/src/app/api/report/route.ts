@@ -29,10 +29,22 @@ export async function POST(request: Request) {
       { name: 'Governance & Ethics', score: dimensionScores[4], max: 20 },
     ];
 
-    // Determine strengths and gaps
+    // Determine strengths and gaps with detailed info
     const sortedDims = [...dimensions].sort((a, b) => b.score - a.score);
-    const strengths = sortedDims.slice(0, 2).map(d => d.name);
-    const gaps = sortedDims.slice(-2).map(d => d.name);
+    const strengths = sortedDims.slice(0, 2).map(d => ({
+      dimension: d.name,
+      score: d.score,
+      max: d.max,
+      percentage: Math.round((d.score / d.max) * 100),
+      insight: getStrengthInsight(d.name, d.score, d.max)
+    }));
+    const gaps = sortedDims.slice(-2).map(d => ({
+      dimension: d.name,
+      score: d.score,
+      max: d.max,
+      percentage: Math.round((d.score / d.max) * 100),
+      insight: getGapInsight(d.name, d.score, d.max)
+    }));
 
     // Generate personalized recommendations
     const recommendations = generateRecommendations(dimensions, profile, intelligence);
@@ -93,6 +105,30 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function getStrengthInsight(dimension: string, score: number, max: number): string {
+  const pct = Math.round((score / max) * 100);
+  const insights: Record<string, string> = {
+    'AI Literacy': `Your leadership team demonstrates strong understanding of AI fundamentals and can make informed decisions about AI investments. This foundation enables effective evaluation of AI proposals and champions innovation throughout the organisation.`,
+    'Strategy & Vision': `Your organisation has established clear AI vision and strategic direction. This clarity enables prioritised resource allocation and provides a roadmap for measuring AI initiative success.`,
+    'Data & Infrastructure': `Your data foundation is solid, with quality data available for AI initiatives. This enables faster deployment of AI solutions and more reliable outputs from AI systems.`,
+    'Culture & Skills': `Your organisational culture supports AI adoption with relevant skills distributed across teams. This creates a fertile environment for AI initiatives to gain traction and deliver value.`,
+    'Governance & Ethics': `You have established frameworks for responsible AI use, which builds stakeholder trust and positions your organisation well for evolving regulatory requirements.`
+  };
+  return insights[dimension] || `Strong performance in ${dimension} provides a solid foundation for AI initiatives.`;
+}
+
+function getGapInsight(dimension: string, score: number, max: number): string {
+  const pct = Math.round((score / max) * 100);
+  const insights: Record<string, string> = {
+    'AI Literacy': `Building AI literacy across leadership is critical. Without understanding AI capabilities and limitations, leaders may struggle to evaluate AI investments effectively or identify high-value use cases. This gap could lead to missed opportunities or misallocated resources.`,
+    'Strategy & Vision': `A clearer AI strategy would help prioritise initiatives and align AI investments with business objectives. Without strategic clarity, AI projects may remain siloed and fail to deliver enterprise-wide value.`,
+    'Data & Infrastructure': `Strengthening data infrastructure is foundational. Poor data quality or accessibility limits AI system effectiveness and can lead to unreliable outputs that damage trust in AI solutions.`,
+    'Culture & Skills': `Building AI skills and cultural readiness is essential for sustainable adoption. Skills gaps can lead to over-reliance on external consultants and slower iteration on AI initiatives.`,
+    'Governance & Ethics': `Establishing governance frameworks is increasingly important as AI scales. Without clear guidelines, organisations face regulatory risk, potential reputational damage, and ethical concerns that could hinder AI adoption.`
+  };
+  return insights[dimension] || `Focus on improving ${dimension} to accelerate AI maturity.`;
 }
 
 function generateExecutiveSummary(profile: any, totalScore: number, tier: string, dimensions: any[]): string {
@@ -340,19 +376,51 @@ function extractHighlights(intelligence: any): any {
   const highlights: any = {};
   
   if (intelligence?.companyAIPosture) {
-    highlights.companyAIPosture = intelligence.companyAIPosture.fields.slice(0, 3);
+    highlights.companyAIPosture = intelligence.companyAIPosture.fields.map((f: any) => ({
+      name: f.fieldName,
+      value: f.fieldValue,
+      source: f.source
+    }));
   }
   
   if (intelligence?.industryAILandscape) {
-    highlights.industryAILandscape = intelligence.industryAILandscape.fields.slice(0, 3);
+    highlights.industryAILandscape = intelligence.industryAILandscape.fields.map((f: any) => ({
+      name: f.fieldName,
+      value: f.fieldValue,
+      source: f.source
+    }));
   }
   
   if (intelligence?.countryAIPolicy) {
-    highlights.countryAIPolicy = intelligence.countryAIPolicy.fields.slice(0, 3);
+    highlights.countryAIPolicy = intelligence.countryAIPolicy.fields.map((f: any) => ({
+      name: f.fieldName,
+      value: f.fieldValue,
+      source: f.source
+    }));
   }
   
   if (intelligence?.regulatoryEnvironment) {
-    highlights.regulatoryEnvironment = intelligence.regulatoryEnvironment.fields.slice(0, 3);
+    highlights.regulatoryEnvironment = intelligence.regulatoryEnvironment.fields.map((f: any) => ({
+      name: f.fieldName,
+      value: f.fieldValue,
+      source: f.source
+    }));
+  }
+  
+  if (intelligence?.competitiveIntelligence) {
+    highlights.competitiveIntelligence = intelligence.competitiveIntelligence.fields.map((f: any) => ({
+      name: f.fieldName,
+      value: f.fieldValue,
+      source: f.source
+    }));
+  }
+  
+  if (intelligence?.aiSkillsMarket) {
+    highlights.aiSkillsMarket = intelligence.aiSkillsMarket.fields.map((f: any) => ({
+      name: f.fieldName,
+      value: f.fieldValue,
+      source: f.source
+    }));
   }
   
   return highlights;
