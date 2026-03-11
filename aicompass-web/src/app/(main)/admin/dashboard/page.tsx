@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [activePanel, setActivePanel] = useState('overview');
   const [users, setUsers] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
@@ -13,7 +17,15 @@ export default function AdminDashboardPage() {
   const [selectedCohort, setSelectedCohort] = useState<any>(null);
   const [cohortMembers, setCohortMembers] = useState<any[]>([]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated' || (session?.user as any)?.role !== 'ADMIN') {
+      router.push('/admin/login');
+      return;
+    }
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   const loadData = async () => {
     setLoading(true);
@@ -36,7 +48,7 @@ export default function AdminDashboardPage() {
     totalUsers: users.length, 
     totalAssessments: assessments.length, 
     totalCohorts: cohorts.length, 
-    revenue: payments.filter(p => p.status === 'succeeded').reduce((s, p) => s + (p.amount || 0), 0),
+    revenue: payments.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0),
   };
 
   const saveUser = async () => {
@@ -78,7 +90,8 @@ export default function AdminDashboardPage() {
   const deleteCohort = async (id: string) => { if (!confirm('Delete cohort?')) return; await fetch('/api/admin/cohorts?id=' + id, { method: 'DELETE' }); loadData(); };
   const createCohort = async () => { const name = prompt('Cohort name:'); const code = prompt('Code:'); if (name && code) { await fetch('/api/admin/cohorts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, code }) }); loadData(); }};
 
-  if (loading) return <div style={{padding:40,textAlign:'center'}}>Loading...</div>;
+  if (status === 'loading' || (status === 'authenticated' && loading)) return <div style={{padding:40,textAlign:'center'}}>Loading...</div>;
+  if (status !== 'authenticated' || (session?.user as any)?.role !== 'ADMIN') return null;
 
   return (
     <div style={{display:'flex',minHeight:'100vh'}}>
@@ -148,7 +161,7 @@ export default function AdminDashboardPage() {
         )}
 
         {activePanel==='payments'&&(
-          <div><div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:16,marginBottom:24}}><div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:28,fontWeight:600,color:'#16a34a'}}>${stats.revenue.toLocaleString()}</div><div style={{fontSize:12,color:'#6b7280'}}>Total Revenue</div></div><div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:28,fontWeight:600,color:'#000'}}>{payments.length}</div><div style={{fontSize:12,color:'#6b7280'}}>Transactions</div></div></div><div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:14,fontWeight:600,color:'#000'}}>Recent transactions</div><table style={{width:'100%',borderCollapse:'collapse',marginTop:16}}><thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ORGANISATION</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>PLAN</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>AMOUNT</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>STATUS</th></tr></thead><tbody>{payments.map((p,i)=>(<tr key={i}><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{p.org}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{p.plan}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>${p.amount}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><span style={{fontSize:11,padding:'4px 8px',borderRadius:4,background:p.status==='succeeded'?'#dcfce7':'#fef3c7',color:p.status==='succeeded'?'#16a34a':'#d97706'}}>{p.status}</span></td></tr>))}{payments.length===0&&<tr><td colSpan={4} style={{padding:40,textAlign:'center',color:'#6b7280'}}>No payments</td></tr>}</tbody></table></div></div>
+          <div><div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:16,marginBottom:24}}><div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:28,fontWeight:600,color:'#16a34a'}}>${stats.revenue.toLocaleString()}</div><div style={{fontSize:12,color:'#6b7280'}}>Total Revenue</div></div><div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:28,fontWeight:600,color:'#000'}}>{payments.length}</div><div style={{fontSize:12,color:'#6b7280'}}>Transactions</div></div></div><div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:14,fontWeight:600,color:'#000'}}>Recent transactions</div><table style={{width:'100%',borderCollapse:'collapse',marginTop:16}}><thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ORGANISATION</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>PLAN</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>AMOUNT</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>STATUS</th></tr></thead><tbody>{payments.map((p,i)=>(<tr key={i}><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{p.org}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{p.plan}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>${p.amount}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><span style={{fontSize:11,padding:'4px 8px',borderRadius:4,background:p.status==='completed'?'#dcfce7':'#fef3c7',color:p.status==='completed'?'#16a34a':'#d97706'}}>{p.status}</span></td></tr>))}{payments.length===0&&<tr><td colSpan={4} style={{padding:40,textAlign:'center',color:'#6b7280'}}>No payments</td></tr>}</tbody></table></div></div>
         )}
 
         {activePanel==='plans'&&(
