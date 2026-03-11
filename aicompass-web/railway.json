@@ -1,7 +1,7 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install --no-cache && npx prisma generate && npm run build && cp -r public .next/standalone/public",
+    "buildCommand": "npm install && npx prisma generate && npm run build",
     "noCache": true
   },
   "deploy": {
