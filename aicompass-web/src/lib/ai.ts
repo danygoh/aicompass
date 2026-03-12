@@ -1,4 +1,4 @@
-const TIMEOUT = 30000;
+const TIMEOUT = 45000;
 
 async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   const controller = new AbortController();
@@ -16,37 +16,139 @@ async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   }
 }
 
-async function callAnthropic(systemPrompt: string, userMessage: string): Promise<string> {
-  console.log('Calling Anthropic (Haiku)...');
- 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01'
+// Structured output schema for 12-category intelligence
+const SCHEMA = {
+  type: "object",
+  properties: {
+    professionalProfile: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }]
-    })
-  });
-
-  const data = await response.json();
- 
-  if (data.error) {
-    console.log('Anthropic error:', response.status, JSON.stringify(data));
-    throw new Error(`Anthropic: ${response.status}`);
-  }
-
-  console.log('Anthropic success');
-
-  // Return raw text - let route.ts handle parsing
-  const textBlocks = (data.content || []).filter((c: any) => c.type === 'text');
-  return textBlocks[textBlocks.length - 1]?.text || '';
-}
+    companyOverview: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    companyAIPosture: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    industryAILandscape: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    regulatoryEnvironment: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    countryAIPolicy: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    competitiveIntelligence: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    aiSkillsMarket: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    technologyStack: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    peerBenchmarks: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    recentAIEvents: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    },
+    skillsCredentials: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        fields: { type: "array" },
+        sources: { type: "array" }
+      },
+      required: ["name", "fields", "sources"],
+      additionalProperties: false
+    }
+  },
+  required: [
+    "professionalProfile", "companyOverview", "companyAIPosture",
+    "industryAILandscape", "regulatoryEnvironment", "countryAIPolicy",
+    "competitiveIntelligence", "aiSkillsMarket", "technologyStack",
+    "peerBenchmarks", "recentAIEvents", "skillsCredentials"
+  ],
+  additionalProperties: false
+};
 
 export async function generateWithFallback(prompt: string): Promise<string> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -55,19 +157,47 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   console.log('Anthropic key:', !!anthropicKey);
   console.log('DeepSeek key:', !!deepseekKey);
 
-  // System prompt to enforce JSON output
-  const systemPrompt = `You are an AI analyst. Return ONLY valid JSON. No explanations, no markdown.`;
-
-  // Try Anthropic first
+  // Try Anthropic with structured outputs
   if (anthropicKey) {
     try {
-      return await callAnthropic(systemPrompt, prompt);
+      console.log('Calling Anthropic (structured outputs)...');
+      const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 3000,
+          messages: [{ role: 'user', content: prompt }],
+          output_config: {
+            format: {
+              type: 'json_schema',
+              schema: SCHEMA
+            }
+          }
+        }),
+      }, 40000);
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.log('Anthropic error:', response.status, err);
+        throw new Error(`Anthropic: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Anthropic success (structured)');
+      
+      // With structured outputs, response is guaranteed valid JSON
+      return JSON.stringify(data.content[0].text);
     } catch (error: any) {
       console.log('Anthropic failed:', error.message);
     }
   }
 
-  // Fallback to DeepSeek
+  // Fallback to DeepSeek (no structured output)
   if (deepseekKey) {
     try {
       console.log('Calling DeepSeek...');
