@@ -5,39 +5,37 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { company, industry, country } = body;
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
     
-    if (!anthropicKey) {
-      return NextResponse.json({ error: 'No API key' }, { status: 500 });
+    if (!openaiKey) {
+      return NextResponse.json({ error: 'No OpenAI API key' }, { status: 500 });
     }
 
-    // Simpler, faster prompt
     const prompt = `Give me 12 bullet points about AI readiness for ${company} in ${industry}. 
-Respond ONLY as JSON array: [{"category":"name","fields":[{"field":"x","value":"y"}]}`;
+Respond ONLY as JSON array like: [{"category":"name","point":"value"}]`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${openaiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307', // Fastest model
-        max_tokens: 1000,
+        model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500,
       }),
-      signal: AbortSignal.timeout(15000) // 15s timeout
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'API failed' }, { status: 500 });
+      return NextResponse.json({ error: 'OpenAI API failed' }, { status: 500 });
     }
 
     const data = await response.json();
-    const text = data.content[0].text;
+    const text = data.choices[0].message.content;
     
-    return NextResponse.json({ raw: text });
+    return NextResponse.json({ result: text });
     
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
