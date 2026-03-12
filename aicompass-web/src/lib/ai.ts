@@ -1,5 +1,3 @@
-// Anthropic structured outputs - guaranteed valid JSON
-
 const TIMEOUT = 30000;
 
 async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
@@ -18,6 +16,51 @@ async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   }
 }
 
+async function callAnthropic(systemPrompt: string, userMessage: string): Promise<string> {
+  console.log('Calling Anthropic (Haiku)...');
+ 
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  });
+
+  const data = await response.json();
+ 
+  if (data.error) {
+    console.log('Anthropic error:', response.status, JSON.stringify(data));
+    throw new Error(`Anthropic: ${response.status}`);
+  }
+
+  console.log('Anthropic success');
+
+  // Take the LAST text block — web_search produces multiple content blocks
+  const textBlocks = (data.content || []).filter((c: any) => c.type === 'text');
+  const raw = textBlocks[textBlocks.length - 1]?.text || '';
+
+  // Strip markdown fences and extract JSON object
+  const clean = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
+ 
+  if (start === -1 || end === -1) {
+    console.error('No JSON found in response. Raw text:', raw.substring(0, 500));
+    throw new Error('No JSON object in Anthropic response');
+  }
+
+  return clean.substring(start, end + 1);
+}
+
 export async function generateWithFallback(prompt: string): Promise<string> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
@@ -25,71 +68,19 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   console.log('Anthropic key:', !!anthropicKey);
   console.log('DeepSeek key:', !!deepseekKey);
 
-  // Define the JSON schema for 12-category intelligence
-  const schema = {
-    type: "object",
-    properties: {
-      professionalProfile: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      companyOverview: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      companyAIPosture: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      industryAILandscape: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      regulatoryEnvironment: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      countryAIPolicy: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      competitiveIntelligence: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      aiSkillsMarket: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      technologyStack: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      peerBenchmarks: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      recentAIEvents: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-      skillsCredentials: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
-    },
-    required: ["professionalProfile", "companyOverview", "companyAIPosture", "industryAILandscape", "regulatoryEnvironment", "countryAIPolicy", "competitiveIntelligence", "aiSkillsMarket", "technologyStack", "peerBenchmarks", "recentAIEvents", "skillsCredentials"]
-  };
+  // System prompt to enforce JSON output
+  const systemPrompt = `You are an AI analyst. Return ONLY valid JSON. No explanations, no markdown.`;
 
-  // Try Anthropic with structured outputs
+  // Try Anthropic first
   if (anthropicKey) {
     try {
-      console.log('Calling Anthropic (structured outputs)...');
-      const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: prompt }],
-          output_config: {
-            format: {
-              type: 'json_schema',
-              schema: schema
-            }
-          }
-        }),
-      }, 25000);
-
-      if (!response.ok) {
-        const err = await response.text();
-        console.log('Anthropic error:', response.status, err);
-        throw new Error(`Anthropic: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Anthropic success (structured)');
-      
-      // Find the text block (not at index 0 if web_search used)
-      const textBlock = data.content.find((c: any) => c.type === 'text');
-      if (!textBlock) throw new Error('No text block in API response');
-      
-      // Return the JSON string as-is (not stringified)
-      return textBlock.text;
+      return await callAnthropic(systemPrompt, prompt);
     } catch (error: any) {
       console.log('Anthropic failed:', error.message);
     }
   }
 
-  // Fallback to DeepSeek (no structured output)
+  // Fallback to DeepSeek
   if (deepseekKey) {
     try {
       console.log('Calling DeepSeek...');
