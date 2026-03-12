@@ -27,22 +27,38 @@ export async function POST(request: Request) {
     }
 
     // Enhanced prompt for detailed, expressive responses
-    const prompt = `Generate 12-category AI readiness intelligence for ${company}, a ${seniority} in the ${industry} industry based in ${country}.
+    const prompt = `You are an expert AI analyst researching ${company}, a ${seniority} in the ${industry} industry operating in ${country}.
 
-Respond with JSON only. Each category must include:
-- name: category identifier
-- fields: array of {fieldName, fieldValue, source} where fieldValue provides 2-3 sentences of meaningful, actionable insight
-- sources: array of source names
+Generate a comprehensive 12-category AI readiness intelligence report. This is for strategic planning purposes - be thorough, specific, and actionable.
 
-Categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
+For each category, provide:
+- name: The category identifier
+- fields: Array of {fieldName, fieldValue, source} where fieldValue provides detailed, multi-sentence analysis
+- sources: Array of source names
 
-IMPORTANT: 
-- Provide substantive fieldValue content (2-3 sentences each) - not just keywords
-- Include specific numbers, percentages, or timelines where relevant
-- Make insights actionable and relevant to ${industry} in ${country}
-- Prioritize practical takeaways over generic statements
+CATEGORIES TO COVER:
+1. professionalProfile - The individual's background, role, and AI involvement
+2. companyOverview - Company size, history, and strategic positioning
+3. companyAIPosture - Current AI adoption state, initiatives, and maturity
+4. industryAILandscape - How AI is transforming ${industry}, key trends, disruptions
+5. regulatoryEnvironment - Relevant AI regulations, compliance requirements in ${country}
+6. countryAIPolicy - ${country}'s national AI strategy and government initiatives
+7. competitiveIntelligence - What competitors are doing with AI
+8. aiSkillsMarket - Talent availability, skill gaps in ${country}/${industry}
+9. technologyStack - Current tech infrastructure, readiness for AI
+10. peerBenchmarks - How similar companies are performing on AI
+11. recentAIEvents - Recent AI news, breakthroughs relevant to ${industry}
+12. skillsCredentials - Relevant certifications, training programs
 
-Return valid JSON array or object.`;
+REQUIREMENTS:
+- Each fieldValue must be 2-4 substantive sentences with specific details, not generic statements
+- Include relevant statistics, percentages, timelines, and concrete examples
+- Make insights specifically relevant to ${company} in ${industry} in ${country}
+- Prioritise actionable strategic takeaways over generic observations
+- Identify risks and opportunities specific to their situation
+- Provide competitive context where relevant
+
+Return valid JSON only.`;
 
     try {
       const response = await deepseek.chat.completions.create({
