@@ -1,6 +1,35 @@
 import { NextResponse } from 'next/server';
 import { generateWithFallback } from '@/lib/ai';
 
+// JSON repair function
+function repairJSON(text: string): any {
+  // Step 1: Extract the JSON portion
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  
+  if (start === -1 || end === -1) return null;
+  
+  let cleaned = text.substring(start, end + 1);
+  
+  // Step 2: Common JSON fixes
+  // Remove trailing commas before } or ]
+  cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+  
+  // Fix unquoted keys (e.g., {name: -> {"name":)
+  cleaned = cleaned.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+  
+  // Fix single quotes to double quotes
+  cleaned = cleaned.replace(/:\s*'([^']*)'/g, ': "$1"');
+  cleaned = cleaned.replace(/'([^']*?)'([,\s]*})/g, '"$1"$2');
+  
+  // Try parsing
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -46,18 +75,28 @@ Return valid JSON only.`;
 
     const text = await generateWithFallback(prompt);
     
-    // Parse the JSON string returned from generateWithFallback
-    let intelligence;
+    // Try direct parse first
+    let intelligence = null;
     try {
       intelligence = JSON.parse(text);
     } catch {
-      // Try to extract JSON
-      const match = text.match(/\{[\s\S]*\}/) || text.match(/\[[\s\S]*\]/);
+      // Try repair
+      intelligence = repairJSON(text);
+    }
+    
+    // Last resort: regex extract
+    if (!intelligence) {
+      const match = text.match(/\{[\s\S]*\}/);
       if (match) {
-        intelligence = JSON.parse(match[0]);
-      } else {
-        return NextResponse.json({ error: 'Failed to parse response', raw: text.substring(0, 500) }, { status: 500 });
+        intelligence = repairJSON(match[0]);
       }
+    }
+    
+    if (!intelligence) {
+      return NextResponse.json({ 
+        error: 'Failed to parse', 
+        raw: text.substring(0, 500) 
+      }, { status: 500 });
     }
     
     return NextResponse.json(intelligence);
