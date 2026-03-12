@@ -142,7 +142,19 @@ export default function AdminDashboardPage() {
   };
 
   const deleteCohort = async (id: string) => { if (!confirm('Delete cohort?')) return; await fetch('/api/admin/cohorts?id=' + id, { method: 'DELETE' }); loadData(); };
-  const createCohort = async () => { const name = prompt('Cohort name:'); const code = prompt('Code:'); if (name && code) { await fetch('/api/admin/cohorts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, code }) }); loadData(); }};
+  const createCohort = async () => { 
+    const name = prompt('Cohort name:');
+    const code = prompt('Cohort code (e.g., OXFORD-2026):');
+    const maxUsers = prompt('Max users (leave empty for unlimited):');
+    if (name && code) { 
+      await fetch('/api/admin/cohorts', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ name, code: code.toUpperCase(), maxUsers: maxUsers ? parseInt(maxUsers) : null }) 
+      }); 
+      loadData(); 
+    }
+  };
 
   const downloadUsersXLS = () => {
     const headers = ['Name', 'Email', 'Company', 'Industry', 'Tier', 'Joined', 'Last Login', 'Last Completed', 'Score', 'Assessments'];
@@ -165,6 +177,61 @@ export default function AdminDashboardPage() {
     a.href = url;
     a.download = 'users.xls';
     a.click();
+  };
+
+  const downloadReportPDF = async (report: any) => {
+    try {
+      // Fetch fresh report data
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: {
+            firstName: report.userName?.split(' ')[0] || '',
+            lastName: report.userName?.split(' ').slice(1).join(' ') || '',
+            company: report.company || '',
+            industry: report.industry || '',
+          },
+          responses: [],
+          intelligence: {},
+          totalScore: report.totalScore,
+          dimensionScores: report.dimensionScores,
+          tier: report.tier,
+          reportId: report.id,
+        }),
+      });
+      
+      const reportData = await response.json();
+      const fullReport = { ...report, reportData };
+      
+      // Generate PDF
+      const pdfResponse = await fetch('/api/admin/reports/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report: fullReport }),
+      });
+      
+      const pdfData = await pdfResponse.json();
+      
+      if (pdfData.pdf) {
+        // Download PDF
+        const byteCharacters = atob(pdfData.pdf);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = pdfData.filename;
+        a.click();
+      }
+    } catch (e) {
+      console.error('PDF download failed:', e);
+      alert('PDF generation failed. Try downloading HTML instead.');
+    }
   };
 
   const downloadReport = async (report: any) => {
@@ -531,7 +598,10 @@ export default function AdminDashboardPage() {
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',fontWeight:600,color:'#f59e0b'}}>{r.totalScore}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.tier || '-'}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '-'}</td>
-                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><button onClick={()=>downloadReport(r)} style={{padding:'4px 8px',background:'#0d9488',border:'none',borderRadius:4,color:'#fff',cursor:'pointer'}}>Download</button></td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}>
+                        <button onClick={()=>downloadReportPDF(r)} style={{padding:'4px 8px',background:'#0d9488',border:'none',borderRadius:4,color:'#fff',cursor:'pointer',marginRight:4}}>PDF</button>
+                        <button onClick={()=>downloadReport(r)} style={{padding:'4px 8px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:4,cursor:'pointer'}}>HTML</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -543,7 +613,7 @@ export default function AdminDashboardPage() {
 
         {/* COHORTS */}
         {activePanel==='cohorts'&&!selectedCohort&&(
-          <div><div style={{marginBottom:16}}><button onClick={createCohort} style={{padding:'10px 20px',background:'#0d9488',border:'none',borderRadius:8,color:'#fff',cursor:'pointer'}}>+ New Cohort</button></div><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:16}}>{cohorts.map(c=>(<div key={c.id} onClick={()=>openCohort(c)} style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20,cursor:'pointer'}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><div style={{fontWeight:600,color:'#000'}}>{c.name}</div><span style={{fontSize:10,padding:'3px 8px',borderRadius:4,background:c.status==='ACTIVE'?'#dcfce7':'#f3f4f6',color:c.status==='ACTIVE'?'#16a34a':'#6b7280'}}>{c.status}</span></div><div style={{fontFamily:'monospace',fontSize:12,color:'#6b7280',marginBottom:16}}>{c.code}</div><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:12,color:'#6b7280'}}>{c.maxUsers||'∞'} participants</span><button onClick={(e)=>{e.stopPropagation();deleteCohort(c.id);}} style={{padding:'4px 8px',fontSize:11,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Delete</button></div></div>))}{cohorts.length===0&&<div style={{gridColumn:'1/-1',padding:40,textAlign:'center',color:'#6b7280'}}>No cohorts yet</div>}</div></div>
+          <div><div style={{marginBottom:16}}><button onClick={createCohort} style={{padding:'10px 20px',background:'#0d9488',border:'none',borderRadius:8,color:'#fff',cursor:'pointer'}}>+ New Cohort</button></div><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:16}}>{cohorts.map(c=>(<div key={c.id} onClick={()=>openCohort(c)} style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20,cursor:'pointer'}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><div style={{fontWeight:600,color:'#000'}}>{c.name}</div><span style={{fontSize:10,padding:'3px 8px',borderRadius:4,background:c.status==='ACTIVE'?'#dcfce7':'#f3f4f6',color:c.status==='ACTIVE'?'#16a34a':'#6b7280'}}>{c.status}</span></div><div style={{fontFamily:'monospace',fontSize:12,color:'#6b7280',marginBottom:16}}>{c.code}</div><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:12,color:'#6b7280'}}>{c.memberCount || 0}/{c.maxUsers || '∞'} users</span><button onClick={(e)=>{e.stopPropagation();deleteCohort(c.id);}} style={{padding:'4px 8px',fontSize:11,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Delete</button></div></div>))}{cohorts.length===0&&<div style={{gridColumn:'1/-1',padding:40,textAlign:'center',color:'#6b7280'}}>No cohorts yet</div>}</div></div>
         )}
 
         {activePanel==='cohorts'&&selectedCohort&&(

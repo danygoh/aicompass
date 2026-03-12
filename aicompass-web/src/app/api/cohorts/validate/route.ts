@@ -18,18 +18,33 @@ export async function GET(request: Request) {
       },
     });
 
-    if (cohort) {
+    if (!cohort) {
+      return NextResponse.json({ valid: false, error: 'Invalid code' });
+    }
+
+    // Count users with this cohort code
+    const usedCount = await prisma.profile.count({
+      where: { cohortCode: cohort.code },
+    });
+
+    // Check max users limit
+    if (cohort.maxUsers && usedCount >= cohort.maxUsers) {
       return NextResponse.json({ 
-        valid: true, 
-        cohort: {
-          code: cohort.code,
-          name: cohort.name,
-          organization: cohort.organization,
-        }
+        valid: false, 
+        error: `Cohort limit reached (${cohort.maxUsers} users maximum). Please contact your administrator.` 
       });
     }
 
-    return NextResponse.json({ valid: false, error: 'Invalid code' });
+    return NextResponse.json({ 
+      valid: true, 
+      cohort: {
+        code: cohort.code,
+        name: cohort.name,
+        organization: cohort.organization,
+        maxUsers: cohort.maxUsers,
+        used: usedCount,
+      }
+    });
   } catch (error) {
     console.error('Cohort validation error:', error);
     return NextResponse.json({ valid: false, error: 'Validation failed' }, { status: 500 });

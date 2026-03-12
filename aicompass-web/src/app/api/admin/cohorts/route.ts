@@ -18,8 +18,24 @@ export async function GET() {
   try {
     const cohorts = await prisma.cohort.findMany({
       orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { payments: true }
+        }
+      }
     });
-    return NextResponse.json({ cohorts });
+    
+    // Get member counts for each cohort
+    const cohortsWithMembers = await Promise.all(
+      cohorts.map(async (cohort) => {
+        const memberCount = await prisma.profile.count({
+          where: { cohortCode: cohort.code }
+        });
+        return { ...cohort, memberCount };
+      })
+    );
+    
+    return NextResponse.json({ cohorts: cohortsWithMembers });
   } catch (error: any) {
     console.error('Cohorts API error:', error);
     return NextResponse.json({ error: 'Failed to fetch cohorts' }, { status: 500 });
