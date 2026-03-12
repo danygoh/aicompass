@@ -143,38 +143,68 @@ export default function AdminDashboardPage() {
   };
 
   const downloadReport = (report: any) => {
-    const content = `
-AI COMPASS ASSESSMENT REPORT
-============================
-Generated: ${new Date().toLocaleString()}
-
-USER INFORMATION
------------------
-Name: ${report.userName}
-Email: ${report.email}
-Company: ${report.company}
-Industry: ${report.industry}
-
-ASSESSMENT RESULTS
-------------------
-Score: ${report.totalScore}/100
-Tier: ${report.tier}
-Completed: ${report.completedAt ? new Date(report.completedAt).toLocaleString() : 'N/A'}
-
-${report.dimensionScores ? `DIMENSION SCORES
------------------
-AI Literacy: ${report.dimensionScores[0] || 0}/20
-Strategy & Vision: ${report.dimensionScores[1] || 0}/20
-Data & Infrastructure: ${report.dimensionScores[2] || 0}/20
-Culture & Skills: ${report.dimensionScores[3] || 0}/20
-Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
-    `.trim();
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Compass Report - ${report.userName}</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e3a5f; }
+    h1 { color: #1e3a5f; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; }
+    h2 { color: #0d9488; margin-top: 30px; }
+    .score { font-size: 48px; font-weight: bold; color: #f59e0b; }
+    .score-label { font-size: 14px; color: #6b7280; }
+    .tier { display: inline-block; background: #f0fdfa; color: #0d9488; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; color: #6b7280; font-size: 12px; font-weight: 600; }
+    .dimension-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+    .dimension-fill { height: 100%; background: #0d9488; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <h1>🤖 AI Compass Assessment Report</h1>
+  <p class="score-label">Generated: ${new Date().toLocaleString()}</p>
+  
+  <h2>👤 User Information</h2>
+  <table>
+    <tr><th style="width:150px">Name</th><td>${report.userName}</td></tr>
+    <tr><th>Email</th><td>${report.email}</td></tr>
+    <tr><th>Company</th><td>${report.company || 'Not specified'}</td></tr>
+    <tr><th>Industry</th><td>${report.industry || 'Not specified'}</td></tr>
+  </table>
+  
+  <h2>📊 Assessment Results</h2>
+  <div style="display:flex;align-items:center;gap:20px;margin:20px 0;">
+    <div class="score">${report.totalScore || 0}</div>
+    <div><div class="score-label">out of 100</div><span class="tier">${report.tier || 'Beginner'}</span></div>
+  </div>
+  
+  <h2>📈 Dimension Scores</h2>
+  <table>
+    <tr><th>Dimension</th><th style="width:100px">Score</th><th>Progress</th></tr>
+    <tr><td>AI Literacy</td><td>${report.dimensionScores?.[0] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[0] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Strategy & Vision</td><td>${report.dimensionScores?.[1] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[1] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Data & Infrastructure</td><td>${report.dimensionScores?.[2] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[2] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Culture & Skills</td><td>${report.dimensionScores?.[3] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[3] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Governance & Ethics</td><td>${report.dimensionScores?.[4] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[4] || 0)/20)*100}%"></div></div></td></tr>
+  </table>
+  
+  <p><strong>Completed:</strong> ${report.completedAt ? new Date(report.completedAt).toLocaleString() : 'N/A'}</p>
+  
+  <div class="footer">
+    <p>🔷 AI Compass — AI Readiness Assessment Platform</p>
+    <p>This report is confidential and intended for the use of the assessed individual/organisation.</p>
+  </div>
+</body>
+</html>`;
     
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `report-${report.userName.replace(/\s+/g, '-')}-${new Date(report.completedAt).toISOString().split('T')[0]}.txt`;
+    a.download = `AI-Compass-Report-${(report.userName || 'User').replace(/\s+/g, '-')}-${new Date(report.completedAt || Date.now()).toISOString().split('T')[0]}.html`;
     a.click();
   };
 
@@ -316,22 +346,14 @@ Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
 
             {showAddUser && (
               <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20,marginBottom:16}}>
-                <div style={{fontSize:14,fontWeight:600,marginBottom:12}}>Add New User</div>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
-                  <input placeholder="Name" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} style={{padding:10,border:'1px solid #e5e7eb',borderRadius:8}} />
-                  <input placeholder="Email" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})} style={{padding:10,border:'1px solid #e5e7eb',borderRadius:8}} />
-                  <input placeholder="Password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} style={{padding:10,border:'1px solid #e5e7eb',borderRadius:8}} />
-                  <input placeholder="Company" value={newUser.company} onChange={e=>setNewUser({...newUser,company:e.target.value})} style={{padding:10,border:'1px solid #e5e7eb',borderRadius:8}} />
-                  <select value={newUser.tier} onChange={e=>setNewUser({...newUser,tier:e.target.value})} style={{padding:10,border:'1px solid #e5e7eb',borderRadius:8}}>
-                    <option value="FREE">Free</option>
-                    <option value="PROFESSIONAL">Professional</option>
-                    <option value="TEAM">Team</option>
-                    <option value="ENTERPRISE">Enterprise</option>
-                  </select>
-                  <div style={{display:'flex',gap:8}}>
-                    <button onClick={createUser} style={{padding:'10px 16px',background:'#0d9488',border:'none',borderRadius:8,color:'#fff',cursor:'pointer'}}>Create</button>
-                    <button onClick={()=>setShowAddUser(false)} style={{padding:'10px 16px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:8,cursor:'pointer'}}>Cancel</button>
-                  </div>
+                <div style={{fontSize:14,fontWeight:600,marginBottom:12}}>Add New Client User</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+                  <div><label style={{fontSize:12,color:'#6b7280',display:'block',marginBottom:4}}>Name *</label><input placeholder="Full name" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8}} /></div>
+                  <div><label style={{fontSize:12,color:'#6b7280',display:'block',marginBottom:4}}>Email *</label><input placeholder="email@example.com" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})} style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8}} /></div>
+                  <div><label style={{fontSize:12,color:'#6b7280',display:'block',marginBottom:4}}>Password *</label><input placeholder="Temporary password" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8}} /></div>
+                  <div><label style={{fontSize:12,color:'#6b7280',display:'block',marginBottom:4}}>Company</label><input placeholder="Company name" value={newUser.company} onChange={e=>setNewUser({...newUser,company:e.target.value})} style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8}} /></div>
+                  <div><label style={{fontSize:12,color:'#6b7280',display:'block',marginBottom:4}}>Tier</label><select value={newUser.tier} onChange={e=>setNewUser({...newUser,tier:e.target.value})} style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8}}><option value="FREE">Free</option><option value="PROFESSIONAL">Professional</option><option value="TEAM">Team</option><option value="ENTERPRISE">Enterprise</option></select></div>
+                  <div style={{display:'flex',alignItems:'flex-end',gap:8}}><button onClick={createUser} style={{padding:'10px 20px',background:'#0d9488',border:'none',borderRadius:8,color:'#fff',cursor:'pointer'}}>Create User</button><button onClick={()=>setShowAddUser(false)} style={{padding:'10px 20px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:8,cursor:'pointer'}}>Cancel</button></div>
                 </div>
               </div>
             )}
