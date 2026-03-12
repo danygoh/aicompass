@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { SignJWT } from 'jose';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || 'ai-compass-secret-key-change-in-production'
