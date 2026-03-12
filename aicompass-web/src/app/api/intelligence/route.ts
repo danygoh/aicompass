@@ -8,17 +8,12 @@ export async function POST(request: Request) {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     
     if (!anthropicKey) {
-      return NextResponse.json({ error: 'No API key configured' }, { status: 500 });
+      return NextResponse.json({ error: 'No API key' }, { status: 500 });
     }
 
-    const prompt = `Return ONLY valid JSON for AI readiness report for ${company} (${industry}, ${country}).
-
-JSON format exactly:
-{"professionalProfile":{"name":"professionalProfile","fields":[{"fieldName":"Role","fieldValue":"Detailed description here.","source":"Source"}],"sources":["Source"]}}
-
-12 categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
-
-Each field: 2-3 sentences. Valid JSON only.`;
+    // Simpler, faster prompt
+    const prompt = `Give me 12 bullet points about AI readiness for ${company} in ${industry}. 
+Respond ONLY as JSON array: [{"category":"name","fields":[{"field":"x","value":"y"}]}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -28,35 +23,21 @@ Each field: 2-3 sentences. Valid JSON only.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2500,
+        model: 'claude-3-haiku-20240307', // Fastest model
+        max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }],
       }),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(15000) // 15s timeout
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      return NextResponse.json({ error: 'API failed', details: err }, { status: 500 });
+      return NextResponse.json({ error: 'API failed' }, { status: 500 });
     }
 
     const data = await response.json();
     const text = data.content[0].text;
     
-    // Try to find JSON in response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return NextResponse.json(parsed);
-      } catch {}
-    }
-    
-    // If still fails, return raw text
-    return NextResponse.json({ 
-      message: "Data generated but parsing failed",
-      raw: text.substring(0, 1000) 
-    });
+    return NextResponse.json({ raw: text });
     
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
