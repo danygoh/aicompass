@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     const executiveSummary = generateExecutiveSummary(profile, totalScore, tier, dimensions);
     
     // Generate next steps
-    const nextSteps = generateNextSteps(dimensions, gaps, profile);
+    const nextSteps = generateNextSteps(dimensions, gaps.map(g => g.insight), profile);
 
     const report = {
       // Header
