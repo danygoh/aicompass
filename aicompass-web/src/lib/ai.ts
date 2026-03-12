@@ -15,6 +15,7 @@ export async function generateWithFallback(prompt: string, system?: string): Pro
   // Try DeepSeek first
   if (process.env.DEEPSEEK_API_KEY) {
     try {
+      console.log('Trying DeepSeek...');
       const response = await deepseek.chat.completions.create({
         model: 'deepseek-chat',
         messages: [
@@ -22,28 +23,37 @@ export async function generateWithFallback(prompt: string, system?: string): Pro
           { role: 'user' as const, content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
-      });
+        max_tokens: 2000,
+      }, { timeout: 30000 });
       
       const text = response.choices[0]?.message?.content;
-      if (text) return text;
+      if (text) {
+        console.log('DeepSeek success');
+        return text;
+      }
     } catch (error: any) {
-      console.log('DeepSeek failed, trying Anthropic:', error.message);
+      console.log('DeepSeek error:', error.message);
     }
   }
   
   // Fallback to Anthropic
   if (process.env.ANTHROPIC_API_KEY) {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      temperature: 0.7,
-      messages: [
-        ...(system ? [{ role: 'user' as const, content: `${system}\n\n${prompt}` }] : [{ role: 'user' as const, content: prompt }])
-      ]
-    });
-    
-    return response.content[0].type === 'text' ? response.content[0].text : '';
+    try {
+      console.log('Trying Anthropic...');
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        temperature: 0.7,
+        messages: [
+          ...(system ? [{ role: 'user' as const, content: `${system}\n\n${prompt}` }] : [{ role: 'user' as const, content: prompt }])
+        ]
+      }, { timeout: 30000 });
+      
+      console.log('Anthropic success');
+      return response.content[0].type === 'text' ? response.content[0].text : '';
+    } catch (error: any) {
+      console.log('Anthropic error:', error.message);
+    }
   }
   
   throw new Error('No AI API keys configured');
