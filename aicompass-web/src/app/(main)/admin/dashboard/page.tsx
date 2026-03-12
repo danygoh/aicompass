@@ -181,28 +181,9 @@ export default function AdminDashboardPage() {
 
   const downloadReportPDF = async (report: any) => {
     try {
-      // Fetch fresh report data
-      const response = await fetch('/api/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: {
-            firstName: report.userName?.split(' ')[0] || '',
-            lastName: report.userName?.split(' ').slice(1).join(' ') || '',
-            company: report.company || '',
-            industry: report.industry || '',
-          },
-          responses: [],
-          intelligence: {},
-          totalScore: report.totalScore,
-          dimensionScores: report.dimensionScores,
-          tier: report.tier,
-          reportId: report.id,
-        }),
-      });
-      
-      const reportData = await response.json();
-      const fullReport = { ...report, reportData };
+      // Report data is already in the report object from the API
+      // Just use it directly
+      const fullReport = { ...report };
       
       // Generate PDF
       const pdfResponse = await fetch('/api/admin/reports/pdf', {
@@ -227,6 +208,8 @@ export default function AdminDashboardPage() {
         a.href = url;
         a.download = pdfData.filename;
         a.click();
+      } else {
+        alert('PDF generation failed: ' + (pdfData.error || 'Unknown error'));
       }
     } catch (e) {
       console.error('PDF download failed:', e);
