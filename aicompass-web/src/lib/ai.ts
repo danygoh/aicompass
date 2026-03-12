@@ -43,21 +43,9 @@ async function callAnthropic(systemPrompt: string, userMessage: string): Promise
 
   console.log('Anthropic success');
 
-  // Take the LAST text block — web_search produces multiple content blocks
+  // Return raw text - let route.ts handle parsing
   const textBlocks = (data.content || []).filter((c: any) => c.type === 'text');
-  const raw = textBlocks[textBlocks.length - 1]?.text || '';
-
-  // Strip markdown fences and extract JSON object
-  const clean = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-  const start = clean.indexOf('{');
-  const end = clean.lastIndexOf('}');
- 
-  if (start === -1 || end === -1) {
-    console.error('No JSON found in response. Raw text:', raw.substring(0, 500));
-    throw new Error('No JSON object in Anthropic response');
-  }
-
-  return clean.substring(start, end + 1);
+  return textBlocks[textBlocks.length - 1]?.text || '';
 }
 
 export async function generateWithFallback(prompt: string): Promise<string> {
