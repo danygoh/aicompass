@@ -650,3 +650,127 @@ export default function ReportPage() {
     </div>
   );
 }
+
+// Section L: Recommendations (from API)
+{rd?.recommendations && rd.recommendations.length > 0 && (
+  <div className="r-sec" id="sec-l">
+    <div className="rs-hdr">
+      <div>
+        <div className="rs-tag">Section L · Action Items</div>
+        <div className="rs-title">Personalised Recommendations</div>
+      </div>
+    </div>
+    <div className="rs-body">
+      {rd.recommendations.map((rec: any, idx: number) => (
+        <div key={idx} style={{ 
+          padding: '14px 17px', 
+          background: 'var(--navy)', 
+          borderRadius: 'var(--r)', 
+          marginBottom: '12px',
+          borderLeft: rec.priority === 'high' ? '3px solid #B32B2B' : rec.priority === 'medium' ? '3px solid #B86A00' : '3px solid #1A6B3A'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: rec.priority === 'high' ? '#B32B2B' : rec.priority === 'medium' ? '#B86A00' : '#1A6B3A', textTransform: 'uppercase' }}>
+              {rec.priority} priority
+            </span>
+            <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>{rec.dimension}</span>
+          </div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'white', marginBottom: '6px' }}>
+            {rec.title}
+          </div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: '10px' }}>
+            {rec.description}
+          </div>
+          {rec.companyInsight && (
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '10px' }}>
+              💡 {rec.companyInsight}
+            </div>
+          )}
+          {rec.actions && rec.actions.length > 0 && (
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>
+              <strong>Actions:</strong> {rec.actions.join(' → ')}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>
+            <span>⏱️ {rec.timeline}</span>
+            <span>📈 Impact: {rec.impact}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Section M: Next Steps (from API) */}
+{rd?.nextSteps && rd.nextSteps.length > 0 && (
+  <div className="r-sec" id="sec-m">
+    <div className="rs-hdr">
+      <div>
+        <div className="rs-tag">Section M · Implementation</div>
+        <div className="rs-title">Next Steps</div>
+      </div>
+    </div>
+    <div className="rs-body">
+      <div style={{ display: 'grid', gap: '8px' }}>
+        {rd.nextSteps.map((step: string, idx: number) => (
+          <div key={idx} style={{ 
+            display: 'flex', 
+            alignItems: 'flex-start', 
+            gap: '10px',
+            padding: '10px 14px', 
+            background: 'var(--navy)', 
+            borderRadius: 'var(--r)',
+            fontSize: '11px',
+            color: 'rgba(255,255,255,0.8)'
+          }}>
+            <span style={{ 
+              width: '18px', 
+              height: '18px', 
+              borderRadius: '50%', 
+              background: 'rgba(255,255,255,0.1)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontSize: '9px',
+              flexShrink: 0
+            }}>
+              {idx + 1}
+            </span>
+            {step}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Section N: Intelligence Highlights - All 12 Categories */}
+{rd?.intelligence && Object.keys(rd.intelligence).length > 0 && (
+  <div className="r-sec" id="sec-n">
+    <div className="rs-hdr">
+      <div>
+        <div className="rs-tag">Section N · Research</div>
+        <div className="rs-title">Intelligence Highlights</div>
+      </div>
+    </div>
+    <div className="rs-body">
+      {Object.entries(rd.intelligence).slice(0, 6).map(([key, value]: [string, any], idx: number) => (
+        <div key={idx} style={{ 
+          padding: '12px 15px', 
+          background: 'var(--navy)', 
+          borderRadius: 'var(--r)', 
+          marginBottom: '10px'
+        }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: '6px' }}>
+            {key.replace(/([A-Z])/g, ' $1').trim()}
+          </div>
+          {Array.isArray(value) && value.slice(0, 2).map((item: any, i: number) => (
+            <div key={i} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>
+              <strong>{item.name}:</strong> {item.value?.substring(0, 100)}...
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
