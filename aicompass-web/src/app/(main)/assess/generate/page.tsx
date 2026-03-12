@@ -226,7 +226,21 @@ export default function GeneratePage() {
                 color: '#ff6b6b',
                 fontSize: '13px'
               }}>
-                {error}
+                <div>{error}</div>
+                <button 
+                  onClick={() => window.location.reload()}
+                  style={{
+                    marginTop: '8px',
+                    padding: '8px 16px',
+                    background: '#ff6b6b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Retry ↻
+                </button>
               </div>
             )}
           </div>
