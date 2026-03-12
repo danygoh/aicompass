@@ -1,233 +1,62 @@
-const TIMEOUT = 45000;
+import https from 'https';
 
-async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch (error: any) {
-    clearTimeout(id);
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
-    }
-    throw error;
-  }
+// Robust JSON repair
+function repairJSON(text: string): any {
+  let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+  cleaned = cleaned.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+  cleaned = cleaned.replace(/'([^']*?)'/g, '"$1"');
+  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, '');
+  
+  try { return JSON.parse(cleaned); } catch {}
+  const match = cleaned.match(/\[[\s\S]*\]/);
+  if (match) try { return JSON.parse(match[0]); } catch {}
+  return null;
 }
-
-// Structured output schema for 12-category intelligence
-const SCHEMA = {
-  type: "object",
-  properties: {
-    professionalProfile: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    companyOverview: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    companyAIPosture: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    industryAILandscape: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    regulatoryEnvironment: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    countryAIPolicy: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    competitiveIntelligence: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    aiSkillsMarket: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    technologyStack: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    peerBenchmarks: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    recentAIEvents: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    },
-    skillsCredentials: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        fields: { type: "array" },
-        sources: { type: "array" }
-      },
-      required: ["name", "fields", "sources"],
-      additionalProperties: false
-    }
-  },
-  required: [
-    "professionalProfile", "companyOverview", "companyAIPosture",
-    "industryAILandscape", "regulatoryEnvironment", "countryAIPolicy",
-    "competitiveIntelligence", "aiSkillsMarket", "technologyStack",
-    "peerBenchmarks", "recentAIEvents", "skillsCredentials"
-  ],
-  additionalProperties: false
-};
 
 export async function generateWithFallback(prompt: string): Promise<string> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const deepseekKey = process.env.DEEPSEEK_API_KEY;
-  
-  console.log('Anthropic key:', !!anthropicKey);
-  console.log('DeepSeek key:', !!deepseekKey);
+  if (!anthropicKey) throw new Error('No API key');
 
-  // Try Anthropic with structured outputs
-  if (anthropicKey) {
-    try {
-      console.log('Calling Anthropic (structured outputs)...');
-      const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 3000,
-          messages: [{ role: 'user', content: prompt }],
-          output_config: {
-            format: {
-              type: 'json_schema',
-              schema: SCHEMA
-            }
-          }
-        }),
-      }, 40000);
+  // Ask for all 12 as simple key-value pairs
+  const simplePrompt = `For ${prompt}: give JSON with these 12 keys: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials. Each value is a short sentence. Format: {"key":"value","key2":"value2"}. No arrays.`;
 
-      if (!response.ok) {
-        const err = await response.text();
-        console.log('Anthropic error:', response.status, err);
-        throw new Error(`Anthropic: ${response.status}`);
-      }
+  const postData = JSON.stringify({
+    model: 'claude-opus-4-6',
+    max_tokens: 1500,
+    messages: [{ role: 'user', content: simplePrompt }]
+  });
 
-      const data = await response.json();
-      console.log('Anthropic success (structured)');
-      
-      // With structured outputs, response is guaranteed valid JSON
-      return JSON.stringify(data.content[0].text);
-    } catch (error: any) {
-      console.log('Anthropic failed:', error.message);
-    }
-  }
-
-  // Fallback to DeepSeek (no structured output)
-  if (deepseekKey) {
-    try {
-      console.log('Calling DeepSeek...');
-      const response = await fetchWithTimeout('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${deepseekKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 35000
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        if (res.statusCode !== 200) { reject(new Error(`API: ${res.statusCode}`)); return; }
+        try {
+          const parsed = JSON.parse(data);
+          const text = parsed.content[0].text;
+          const repaired = repairJSON(text);
+          if (repaired) resolve(repaired);
+          else resolve(text);
+        } catch(e) { reject(e); }
       });
-
-      if (!response.ok) {
-        const err = await response.text();
-        console.log('DeepSeek error:', response.status, err);
-        throw new Error(`DeepSeek: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('DeepSeek success');
-      return data.choices[0].message.content;
-    } catch (error: any) {
-      console.log('DeepSeek failed:', error.message);
-    }
-  }
-
-  throw new Error('No AI API keys configured');
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+    req.write(postData);
+    req.end();
+  });
 }
