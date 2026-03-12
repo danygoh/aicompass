@@ -1,6 +1,6 @@
 // Direct API calls without SDK - Anthropic first
 
-const TIMEOUT = 25000; // 25 second timeout
+const TIMEOUT = 30000; // 30 second timeout
 
 async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   const controller = new AbortController();
@@ -18,6 +18,44 @@ async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   }
 }
 
+// Robust JSON extraction
+function extractJSON(text: string): any {
+  // Try direct parse first
+  try {
+    return JSON.parse(text);
+  } catch {}
+  
+  // Clean markdown
+  const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  
+  // Try direct parse
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+  
+  // Extract JSON object using indexOf/lastIndexOf
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  
+  if (start !== -1 && end !== -1 && end > start) {
+    try {
+      return JSON.parse(cleaned.substring(start, end + 1));
+    } catch {}
+  }
+  
+  // Try array
+  const arrStart = cleaned.indexOf('[');
+  const arrEnd = cleaned.lastIndexOf(']');
+  
+  if (arrStart !== -1 && arrEnd !== -1 && arrEnd > arrStart) {
+    try {
+      return JSON.parse(cleaned.substring(arrStart, arrEnd + 1));
+    } catch {}
+  }
+  
+  return null;
+}
+
 export async function generateWithFallback(prompt: string): Promise<string> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
@@ -25,7 +63,7 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   console.log('Anthropic key:', !!anthropicKey);
   console.log('DeepSeek key:', !!deepseekKey);
 
-  // Try Anthropic FIRST with Haiku (fastest)
+  // Try Anthropic FIRST with Haiku
   if (anthropicKey) {
     try {
       console.log('Calling Anthropic (Haiku)...');
@@ -38,10 +76,10 @@ export async function generateWithFallback(prompt: string): Promise<string> {
         },
         body: JSON.stringify({
           model: 'claude-3-haiku-20240307',
-          max_tokens: 1500,
+          max_tokens: 4096, // Increased
           messages: [{ role: 'user', content: prompt }],
         }),
-      }, 20000);
+      }, 25000);
 
       if (!response.ok) {
         const err = await response.text();
@@ -51,7 +89,20 @@ export async function generateWithFallback(prompt: string): Promise<string> {
 
       const data = await response.json();
       console.log('Anthropic success');
-      return data.content[0].text;
+      
+      // Get last text block only (for web search scenarios)
+      const content = data.content || [];
+      const textBlocks = content.filter((c: any) => c.type === 'text').map((c: any) => c.text);
+      const text = textBlocks[textBlocks.length - 1] || '';
+      
+      // Extract JSON robustly
+      const json = extractJSON(text);
+      if (json) {
+        return JSON.stringify(json);
+      }
+      
+      // Fallback: return raw text
+      return text;
     } catch (error: any) {
       console.log('Anthropic failed:', error.message);
     }
@@ -71,7 +122,7 @@ export async function generateWithFallback(prompt: string): Promise<string> {
           model: 'deepseek-chat',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
-          max_tokens: 1500,
+          max_tokens: 2000,
         }),
       });
 

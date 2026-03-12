@@ -46,38 +46,18 @@ Return valid JSON only.`;
 
     const text = await generateWithFallback(prompt);
     
-    // More robust JSON parsing
-    let intelligence = null;
-    
-    // Try 1: Direct parse
+    // Parse the JSON string returned from generateWithFallback
+    let intelligence;
     try {
       intelligence = JSON.parse(text);
     } catch {
-      // Try 2: Remove markdown and parse
-      const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      try {
-        intelligence = JSON.parse(cleaned);
-      } catch {
-        // Try 3: Extract first valid JSON array or object
-        const match = cleaned.match(/\[[\s\S]*\]/);
-        if (match) {
-          try {
-            intelligence = JSON.parse(match[0]);
-          } catch {
-            // Try 4: Find JSON between { }
-            const objMatch = cleaned.match(/\{[\s\S]*\}/);
-            if (objMatch) {
-              try {
-                intelligence = JSON.parse(objMatch[0]);
-              } catch {}
-            }
-          }
-        }
+      // Try to extract JSON
+      const match = text.match(/\{[\s\S]*\}/) || text.match(/\[[\s\S]*\]/);
+      if (match) {
+        intelligence = JSON.parse(match[0]);
+      } else {
+        return NextResponse.json({ error: 'Failed to parse response', raw: text.substring(0, 500) }, { status: 500 });
       }
-    }
-    
-    if (!intelligence) {
-      throw new Error('Failed to parse AI response');
     }
     
     return NextResponse.json(intelligence);
