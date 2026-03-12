@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/openai": "^3.0.41",
     "@anthropic-ai/sdk": "^0.78.0",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@react-pdf/renderer": "^4.3.2",
+    "ai": "^6.0.116",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.35.1",
     "jose": "^6.2.1",

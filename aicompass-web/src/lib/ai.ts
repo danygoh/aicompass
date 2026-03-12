@@ -1,34 +1,30 @@
-import OpenAI from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
 
-// Initialize clients
-const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY || '',
-});
+// Verify we have API keys
+const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
+console.log('AI Config - DeepSeek:', hasDeepSeek ? 'available' : 'missing');
+console.log('AI Config - Anthropic:', hasAnthropic ? 'available' : 'missing');
 
 export async function generateWithFallback(prompt: string): Promise<string> {
   // Try DeepSeek first
-  if (process.env.DEEPSEEK_API_KEY) {
+  if (hasDeepSeek) {
     try {
-      console.log('Trying DeepSeek...');
-      const response = await deepseek.chat.completions.create({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
+      const { OpenAI } = await import('@ai-sdk/openai');
+      const deepseek = new OpenAI({
+        baseURL: 'https://api.deepseek.com',
+        apiKey: process.env.DEEPSEEK_API_KEY!,
       });
       
-      const text = response.choices[0]?.message?.content;
-      if (text) {
+      const result = await generateText({
+        model: deepseek('deepseek-chat'),
+        prompt: prompt,
+      });
+      
+      if (result.text) {
         console.log('DeepSeek success');
-        return text;
+        return result.text;
       }
     } catch (error: any) {
       console.log('DeepSeek error:', error.message);
@@ -36,20 +32,20 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   }
   
   // Fallback to Anthropic
-  if (process.env.ANTHROPIC_API_KEY) {
+  if (hasAnthropic) {
     try {
-      console.log('Trying Anthropic...');
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        temperature: 0.7,
-        messages: [
-          { role: 'user', content: prompt }
-        ]
+      const { Anthropic } = await import('@ai-sdk/anthropic');
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY!,
+      });
+      
+      const result = await generateText({
+        model: anthropic('claude-sonnet-4-20250514'),
+        prompt: prompt,
       });
       
       console.log('Anthropic success');
-      return response.content[0].type === 'text' ? response.content[0].text : '';
+      return result.text;
     } catch (error: any) {
       console.log('Anthropic error:', error.message);
     }
@@ -57,5 +53,3 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   
   throw new Error('No AI API keys configured');
 }
-
-export { deepseek, anthropic };
