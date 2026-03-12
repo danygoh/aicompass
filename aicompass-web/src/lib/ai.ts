@@ -1,6 +1,6 @@
-// Direct API calls without SDK - Anthropic first
+// Anthropic structured outputs - guaranteed valid JSON
 
-const TIMEOUT = 30000; // 30 second timeout
+const TIMEOUT = 30000;
 
 async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   const controller = new AbortController();
@@ -18,44 +18,6 @@ async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   }
 }
 
-// Robust JSON extraction
-function extractJSON(text: string): any {
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {}
-  
-  // Clean markdown
-  const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-  
-  // Try direct parse
-  try {
-    return JSON.parse(cleaned);
-  } catch {}
-  
-  // Extract JSON object using indexOf/lastIndexOf
-  const start = cleaned.indexOf('{');
-  const end = cleaned.lastIndexOf('}');
-  
-  if (start !== -1 && end !== -1 && end > start) {
-    try {
-      return JSON.parse(cleaned.substring(start, end + 1));
-    } catch {}
-  }
-  
-  // Try array
-  const arrStart = cleaned.indexOf('[');
-  const arrEnd = cleaned.lastIndexOf(']');
-  
-  if (arrStart !== -1 && arrEnd !== -1 && arrEnd > arrStart) {
-    try {
-      return JSON.parse(cleaned.substring(arrStart, arrEnd + 1));
-    } catch {}
-  }
-  
-  return null;
-}
-
 export async function generateWithFallback(prompt: string): Promise<string> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
@@ -63,10 +25,30 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   console.log('Anthropic key:', !!anthropicKey);
   console.log('DeepSeek key:', !!deepseekKey);
 
-  // Try Anthropic FIRST with Haiku
+  // Define the JSON schema for 12-category intelligence
+  const schema = {
+    type: "object",
+    properties: {
+      professionalProfile: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      companyOverview: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      companyAIPosture: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      industryAILandscape: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      regulatoryEnvironment: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      countryAIPolicy: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      competitiveIntelligence: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      aiSkillsMarket: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      technologyStack: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      peerBenchmarks: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      recentAIEvents: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+      skillsCredentials: { type: "object", properties: { name: { type: "string" }, fields: { type: "array" }, sources: { type: "array" } }, required: ["name", "fields", "sources"] },
+    },
+    required: ["professionalProfile", "companyOverview", "companyAIPosture", "industryAILandscape", "regulatoryEnvironment", "countryAIPolicy", "competitiveIntelligence", "aiSkillsMarket", "technologyStack", "peerBenchmarks", "recentAIEvents", "skillsCredentials"]
+  };
+
+  // Try Anthropic with structured outputs
   if (anthropicKey) {
     try {
-      console.log('Calling Anthropic (Haiku)...');
+      console.log('Calling Anthropic (structured outputs)...');
       const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -76,8 +58,14 @@ export async function generateWithFallback(prompt: string): Promise<string> {
         },
         body: JSON.stringify({
           model: 'claude-3-haiku-20240307',
-          max_tokens: 4096, // Increased
+          max_tokens: 4096,
           messages: [{ role: 'user', content: prompt }],
+          output_config: {
+            format: {
+              type: 'json_schema',
+              schema: schema
+            }
+          }
         }),
       }, 25000);
 
@@ -88,27 +76,16 @@ export async function generateWithFallback(prompt: string): Promise<string> {
       }
 
       const data = await response.json();
-      console.log('Anthropic success');
+      console.log('Anthropic success (structured)');
       
-      // Get last text block only (for web search scenarios)
-      const content = data.content || [];
-      const textBlocks = content.filter((c: any) => c.type === 'text').map((c: any) => c.text);
-      const text = textBlocks[textBlocks.length - 1] || '';
-      
-      // Extract JSON robustly
-      const json = extractJSON(text);
-      if (json) {
-        return JSON.stringify(json);
-      }
-      
-      // Fallback: return raw text
-      return text;
+      // With structured outputs, response is already valid JSON
+      return JSON.stringify(data.content[0].text);
     } catch (error: any) {
       console.log('Anthropic failed:', error.message);
     }
   }
 
-  // Fallback to DeepSeek
+  // Fallback to DeepSeek (no structured output)
   if (deepseekKey) {
     try {
       console.log('Calling DeepSeek...');
