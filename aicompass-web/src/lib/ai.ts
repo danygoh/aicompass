@@ -78,8 +78,12 @@ export async function generateWithFallback(prompt: string): Promise<string> {
       const data = await response.json();
       console.log('Anthropic success (structured)');
       
-      // With structured outputs, response is already valid JSON
-      return JSON.stringify(data.content[0].text);
+      // Find the text block (not at index 0 if web_search used)
+      const textBlock = data.content.find((c: any) => c.type === 'text');
+      if (!textBlock) throw new Error('No text block in API response');
+      
+      // Return the JSON string as-is (not stringified)
+      return textBlock.text;
     } catch (error: any) {
       console.log('Anthropic failed:', error.message);
     }
