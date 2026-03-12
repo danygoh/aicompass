@@ -22,6 +22,8 @@ export default function AdminDashboardPage() {
   const [userFilter, setUserFilter] = useState({ search: '', cohort: '' });
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', company: '', tier: 'FREE' });
+  const [settings, setSettings] = useState<any>({});
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -35,18 +37,20 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [u, a, c, p, r] = await Promise.all([
+      const [u, a, c, p, r, s] = await Promise.all([
         fetch('/api/admin/users').then(r => r.json()),
         fetch('/api/admin/assessments').then(r => r.json()),
         fetch('/api/admin/cohorts').then(r => r.json()),
         fetch('/api/admin/payments').then(r => r.json()),
         fetch('/api/admin/reports').then(r => r.json()),
+        fetch('/api/admin/settings').then(r => r.json()),
       ]);
       setUsers(u.users || []);
       setAssessments(a.assessments || []);
       setCohorts(c.cohorts || []);
       setPayments(p.payments || []);
       setReports(r.reports || []);
+      setSettings(s.settings || {});
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -77,6 +81,27 @@ export default function AdminDashboardPage() {
     await fetch('/api/admin/users/' + editingUser.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: editingUser.name, subscription: editingUser.tier }) });
     setEditingUser(null);
     loadData();
+  };
+
+  const loadSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      const data = await res.json();
+      setSettings(data.settings || {});
+    } catch (e) { console.error('Failed to load settings:', e); }
+  };
+
+  const saveSetting = async (key: string, value: any) => {
+    setSettingsLoading(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      });
+      setSettings({ ...settings, [key]: value });
+    } catch (e) { console.error('Failed to save setting:', e); }
+    setSettingsLoading(false);
   };
 
   const createUser = async () => {
@@ -555,27 +580,54 @@ export default function AdminDashboardPage() {
             <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
               <div style={{fontSize:14,fontWeight:600,color:'#000'}}>Assessment Configuration</div>
               <div style={{fontSize:12,color:'#6b7280',marginTop:4,marginBottom:16}}>Control assessment behaviour and flow</div>
-              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><div><div style={{fontSize:13,fontWeight:500,color:'#000'}}>Payment Gate Enabled</div><div style={{fontSize:11,color:'#6b7280'}}>Require payment before viewing report</div></div><div style={{width:44,height:24,background:'#0d9488',borderRadius:24}}></div></div>
-              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><div><div style={{fontSize:13,fontWeight:500,color:'#000'}}>Require Account</div><div style={{fontSize:11,color:'#6b7280'}}>Users must sign up before assessment</div></div><div style={{width:44,height:24,background:'#0d9488',borderRadius:24}}></div></div>
-              <div style={{padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><div style={{fontSize:13,fontWeight:500,color:'#000',marginBottom:6}}>Questions Count</div><input type="number" defaultValue={25} style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:8,width:100}} /></div>
-              <div style={{padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><div style={{fontSize:13,fontWeight:500,color:'#000',marginBottom:6}}>Passing Score (%)</div><input type="number" defaultValue={50} style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:8,width:100}} /></div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}>
+                <div><div style={{fontSize:13,fontWeight:500,color:'#000'}}>Payment Gate Enabled</div><div style={{fontSize:11,color:'#6b7280'}}>Require payment before viewing report</div></div>
+                <button onClick={() => saveSetting('paymentGateEnabled', !settings.paymentGateEnabled)} style={{width:44,height:24,borderRadius:24,border:'none',cursor:'pointer',background:settings.paymentGateEnabled?'#0d9488':'#e5e7eb'}}></button>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}>
+                <div><div style={{fontSize:13,fontWeight:500,color:'#000'}}>Require Account</div><div style={{fontSize:11,color:'#6b7280'}}>Users must sign up before assessment</div></div>
+                <button onClick={() => saveSetting('requireAccount', !settings.requireAccount)} style={{width:44,height:24,borderRadius:24,border:'none',cursor:'pointer',background:settings.requireAccount?'#0d9488':'#e5e7eb'}}></button>
+              </div>
+              <div style={{padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}>
+                <div style={{fontSize:13,fontWeight:500,color:'#000',marginBottom:6}}>Questions Count</div>
+                <input type="number" value={settings.questionsCount || 25} onChange={e => setSettings({...settings, questionsCount: parseInt(e.target.value)})} onBlur={e => saveSetting('questionsCount', parseInt(e.target.value))} style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:8,width:100}} />
+              </div>
+              <div style={{padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}>
+                <div style={{fontSize:13,fontWeight:500,color:'#000',marginBottom:6}}>Passing Score (%)</div>
+                <input type="number" value={settings.passingScore || 50} onChange={e => setSettings({...settings, passingScore: parseInt(e.target.value)})} onBlur={e => saveSetting('passingScore', parseInt(e.target.value))} style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:8,width:100}} />
+              </div>
             </div>
 
             {/* Email Settings */}
             <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
               <div style={{fontSize:14,fontWeight:600,color:'#000'}}>Email Settings</div>
               <div style={{fontSize:12,color:'#6b7280',marginTop:4,marginBottom:16}}>Configure email notifications</div>
-              <div style={{marginBottom:12}}><label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>From Email</label><input defaultValue="noreply@aicompass.ai" style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} /></div>
-              <div style={{marginBottom:12}}><label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>Reply-To Email</label><input defaultValue="support@nexusfrontiertech.com" style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} /></div>
-              <div style={{marginBottom:12}}><label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>Email Subject - Assessment Complete</label><input defaultValue="Your AI Compass Report is Ready" style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} /></div>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>From Email</label>
+                <input value={settings.fromEmail || ''} onChange={e => setSettings({...settings, fromEmail: e.target.value})} onBlur={e => saveSetting('fromEmail', e.target.value)} style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} />
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>Reply-To Email</label>
+                <input value={settings.replyToEmail || ''} onChange={e => setSettings({...settings, replyToEmail: e.target.value})} onBlur={e => saveSetting('replyToEmail', e.target.value)} style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} />
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>Email Subject - Assessment Complete</label>
+                <input value={settings.emailSubjectComplete || ''} onChange={e => setSettings({...settings, emailSubjectComplete: e.target.value})} onBlur={e => saveSetting('emailSubjectComplete', e.target.value)} style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} />
+              </div>
             </div>
 
             {/* Cohort Settings */}
             <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
               <div style={{fontSize:14,fontWeight:600,color:'#000'}}>Cohort Settings</div>
               <div style={{fontSize:12,color:'#6b7280',marginTop:4,marginBottom:16}}>Default cohort configuration</div>
-              <div style={{marginBottom:12}}><label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>Default Cohort Code Prefix</label><input defaultValue="AIC" style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} /></div>
-              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><div><div style={{fontSize:13,fontWeight:500,color:'#000'}}>Auto-create Cohort on Signup</div><div style={{fontSize:11,color:'#6b7280'}}>Create cohort automatically for new organisations</div></div><div style={{width:44,height:24,background:'#e5e7eb',borderRadius:24}}></div></div>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>Default Cohort Code Prefix</label>
+                <input value={settings.cohortPrefix || 'AIC'} onChange={e => setSettings({...settings, cohortPrefix: e.target.value})} onBlur={e => saveSetting('cohortPrefix', e.target.value)} style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13}} />
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}>
+                <div><div style={{fontSize:13,fontWeight:500,color:'#000'}}>Auto-create Cohort on Signup</div><div style={{fontSize:11,color:'#6b7280'}}>Create cohort automatically for new organisations</div></div>
+                <button onClick={() => saveSetting('autoCreateCohort', !settings.autoCreateCohort)} style={{width:44,height:24,borderRadius:24,border:'none',cursor:'pointer',background:settings.autoCreateCohort?'#0d9488':'#e5e7eb'}}></button>
+              </div>
             </div>
 
             {/* Platform Info */}
@@ -601,12 +653,11 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Audit Log */}
+            {/* audit Log */}
             <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
               <div style={{fontSize:14,fontWeight:600,color:'#000'}}>Recent Admin Actions</div>
               <div style={{fontSize:12,color:'#6b7280',marginTop:4,marginBottom:16}}>Track recent administrative changes</div>
               <div style={{fontSize:13,color:'#6b7280',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><span style={{color:'#000',fontWeight:500}}>Max</span> created user <span style={{color:'#0d9488'}}>admin@compass.ai</span> - {new Date().toLocaleString()}</div>
-              <div style={{fontSize:13,color:'#6b7280',padding:'12px 0',borderBottom:'1px solid #e5e7eb'}}><span style={{color:'#000',fontWeight:500}}>Max</span> updated cohort <span style={{color:'#0d9488'}}>OXSAID-2026</span> - {new Date().toLocaleString()}</div>
             </div>
           </div>
         )}
