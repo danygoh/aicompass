@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY || '',
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
 export async function POST(request: Request) {
@@ -61,16 +60,16 @@ REQUIREMENTS:
 Return valid JSON only.`;
 
     try {
-      const response = await deepseek.chat.completions.create({
-        model: 'deepseek-chat',
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        temperature: 0.7,
         messages: [
           { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
+        ]
       });
 
-      let text = response.choices[0]?.message?.content || '';
+      let text = response.content[0].type === 'text' ? response.content[0].text : '';
       
       // Clean up any markdown code blocks
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -96,8 +95,8 @@ Return valid JSON only.`;
       }
       
       return NextResponse.json(intelligence);
-    } catch (deepseekError: any) {
-      console.error('DeepSeek API error:', deepseekError.message);
+    } catch (anthropicError: any) {
+      console.error('Anthropic API error:', anthropicError.message);
       // Fall back to mock data on API error
       return NextResponse.json(generateMockIntelligence(body));
     }
