@@ -55,18 +55,18 @@ export default function PaywallPage() {
     setProcessing(true);
     
     if (selectedPlan === 'cohort') {
-      const isValid = COHORT_CODES.some(code => 
-        cohortCode.toUpperCase().startsWith(code.replace('-2026', ''))
-      );
+      // Validate cohort code via API
+      const response = await fetch('/api/cohorts/validate?code=' + encodeURIComponent(cohortCode));
+      const validation = await response.json();
       
-      if (!isValid) {
-        setCohortError('Code not recognised. Check with your organisation.');
+      if (!validation.valid) {
+        setCohortError(validation.error || 'Code not recognised. Check with your organisation.');
         setProcessing(false);
         return;
       }
       
       // Save cohort code and subscription
-      setProfile({ cohortCode, subscription: 'cohort' });
+      setProfile({ cohortCode: validation.cohort.code, subscription: 'cohort' });
     } else if (selectedPlan === 'professional') {
       setProfile({ subscription: 'professional' });
     }

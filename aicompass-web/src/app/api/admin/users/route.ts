@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, email, password, company, tier } = body;
+    const { name, email, password, company, tier, role } = body;
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       data: {
         email,
         name,
+        role: role || 'USER',
         passwordHash,
         profile: {
           create: {
