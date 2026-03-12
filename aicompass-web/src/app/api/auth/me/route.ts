@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || 'ai-compass-secret-key-change-in-production'
 );
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const cookieStore = await import('next/headers').then(m => m.cookies());
-    const token = cookieStore.cookies.get('token')?.value;
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
 
     if (!token) {
       return NextResponse.json(
