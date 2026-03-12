@@ -179,6 +179,17 @@ export default function AdminDashboardPage() {
     a.click();
   };
 
+  const deleteReport = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this report? This cannot be undone.')) return;
+    try {
+      await fetch('/api/admin/assessments?id=' + id, { method: 'DELETE' });
+      loadData();
+    } catch (e) {
+      console.error('Delete failed:', e);
+      alert('Failed to delete');
+    }
+  };
+
   const downloadReportPDF = async (report: any) => {
     try {
       // Report data is already in the report object from the API
@@ -583,7 +594,8 @@ export default function AdminDashboardPage() {
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '-'}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}>
                         <button onClick={()=>downloadReportPDF(r)} style={{padding:'4px 8px',background:'#0d9488',border:'none',borderRadius:4,color:'#fff',cursor:'pointer',marginRight:4}}>PDF</button>
-                        <button onClick={()=>downloadReport(r)} style={{padding:'4px 8px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:4,cursor:'pointer'}}>HTML</button>
+                        <button onClick={()=>downloadReport(r)} style={{padding:'4px 8px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:4,cursor:'pointer',marginRight:4}}>HTML</button>
+                        <button onClick={()=>deleteReport(r.id)} style={{padding:'4px 8px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Delete</button>
                       </td>
                     </tr>
                   ))}
