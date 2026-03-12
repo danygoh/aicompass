@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         user: {
           include: { profile: true }
         },
+        report: true,
       },
       orderBy: { completedAt: 'desc' },
     });
@@ -39,6 +40,8 @@ export async function GET(request: Request) {
       tier: a.tier,
       dimensionScores: a.dimensionScores,
       completedAt: a.completedAt,
+      // Full report data from Report table
+      reportData: a.report?.reportData || null,
     }));
 
     return NextResponse.json({ reports });

@@ -40,6 +40,7 @@ export async function GET(request: Request) {
         id: user.id,
         name: user.name || user.profile?.firstName + ' ' + user.profile?.lastName || 'Unknown',
         email: user.email,
+        role: user.role,
         company: user.profile?.company || '',
         industry: user.profile?.industry || '',
         tier: user.profile?.cohortCode ? 'Cohort' : (completedAssessment?.tier || 'Free'),

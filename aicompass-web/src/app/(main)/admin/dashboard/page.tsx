@@ -143,29 +143,43 @@ export default function AdminDashboardPage() {
   };
 
   const downloadReport = (report: any) => {
+    const rd = report.reportData || {};
+    const executiveSummary = rd.executiveSummary || '';
+    const recommendations = rd.recommendations || [];
+    const nextSteps = rd.nextSteps || [];
+    const overview = rd.findings?.overview || '';
+    
     const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>AI Compass Report - ${report.userName}</title>
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e3a5f; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e3a5f; line-height: 1.6; }
     h1 { color: #1e3a5f; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; }
-    h2 { color: #0d9488; margin-top: 30px; }
-    .score { font-size: 48px; font-weight: bold; color: #f59e0b; }
+    h2 { color: #0d9488; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+    h3 { color: #1e3a5f; margin-top: 20px; }
+    .score { font-size: 64px; font-weight: bold; color: #f59e0b; }
     .score-label { font-size: 14px; color: #6b7280; }
-    .tier { display: inline-block; background: #f0fdfa; color: #0d9488; padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+    .tier { display: inline-block; background: #f0fdfa; color: #0d9488; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
     th { background: #f9fafb; color: #6b7280; font-size: 12px; font-weight: 600; }
-    .dimension-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
-    .dimension-fill { height: 100%; background: #0d9488; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+    .dimension-bar { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
+    .dimension-fill { height: 100%; background: linear-gradient(90deg, #0d9488, #14b8a6); border-radius: 6px; }
+    .priority-high { color: #dc2626; font-weight: 600; }
+    .priority-medium { color: #d97706; font-weight: 600; }
+    .recommendation { background: #f9fafb; border-radius: 8px; padding: 16px; margin: 12px 0; border-left: 4px solid #0d9488; }
+    .actions-list { padding-left: 20px; }
+    .actions-list li { margin: 8px 0; }
+    .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; text-align: center; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .info-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 12px 0; }
   </style>
 </head>
 <body>
   <h1>🤖 AI Compass Assessment Report</h1>
-  <p class="score-label">Generated: ${new Date().toLocaleString()}</p>
+  <p class="score-label">Generated: ${report.completedAt ? new Date(report.completedAt).toLocaleString() : new Date().toLocaleString()}</p>
   
   <h2>👤 User Information</h2>
   <table>
@@ -176,7 +190,7 @@ export default function AdminDashboardPage() {
   </table>
   
   <h2>📊 Assessment Results</h2>
-  <div style="display:flex;align-items:center;gap:20px;margin:20px 0;">
+  <div style="display:flex;align-items:center;gap:30px;margin:20px 0;">
     <div class="score">${report.totalScore || 0}</div>
     <div><div class="score-label">out of 100</div><span class="tier">${report.tier || 'Beginner'}</span></div>
   </div>
@@ -184,18 +198,40 @@ export default function AdminDashboardPage() {
   <h2>📈 Dimension Scores</h2>
   <table>
     <tr><th>Dimension</th><th style="width:100px">Score</th><th>Progress</th></tr>
-    <tr><td>AI Literacy</td><td>${report.dimensionScores?.[0] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[0] || 0)/20)*100}%"></div></div></td></tr>
-    <tr><td>Strategy & Vision</td><td>${report.dimensionScores?.[1] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[1] || 0)/20)*100}%"></div></div></td></tr>
-    <tr><td>Data & Infrastructure</td><td>${report.dimensionScores?.[2] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[2] || 0)/20)*100}%"></div></div></td></tr>
-    <tr><td>Culture & Skills</td><td>${report.dimensionScores?.[3] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[3] || 0)/20)*100}%"></div></div></td></tr>
-    <tr><td>Governance & Ethics</td><td>${report.dimensionScores?.[4] || 0}/20</td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[4] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>AI Literacy</td><td><strong>${report.dimensionScores?.[0] || 0}/20</strong></td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[0] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Strategy & Vision</td><td><strong>${report.dimensionScores?.[1] || 0}/20</strong></td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[1] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Data & Infrastructure</td><td><strong>${report.dimensionScores?.[2] || 0}/20</strong></td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[2] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Culture & Skills</td><td><strong>${report.dimensionScores?.[3] || 0}/20</strong></td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[3] || 0)/20)*100}%"></div></div></td></tr>
+    <tr><td>Governance & Ethics</td><td><strong>${report.dimensionScores?.[4] || 0}/20</strong></td><td><div class="dimension-bar"><div class="dimension-fill" style="width:${((report.dimensionScores?.[4] || 0)/20)*100}%"></div></div></td></tr>
   </table>
   
-  <p><strong>Completed:</strong> ${report.completedAt ? new Date(report.completedAt).toLocaleString() : 'N/A'}</p>
+  ${executiveSummary ? `<h2>📝 Executive Summary</h2><div class="info-box">${executiveSummary.replace(/\n/g, '<br>')}</div>` : ''}
+  
+  ${overview ? `<h2>🏢 Industry & Company Overview</h2><div class="info-box">${overview.replace(/\n/g, '<br>')}</div>` : ''}
+  
+  ${recommendations.length > 0 ? `<h2>💡 Recommendations</h2>
+  ${recommendations.map((rec: any) => `
+    <div class="recommendation">
+      <h3>${rec.title || 'Recommendation'}</h3>
+      <p><span class="priority-${rec.priority || 'medium'}">${(rec.priority || 'medium').toUpperCase()} PRIORITY</span> · ${rec.dimension || ''}</p>
+      <p>${rec.description || ''}</p>
+      ${rec.whyItMatters ? `<p><strong>Why it matters:</strong> ${rec.whyItMatters}</p>` : ''}
+      ${rec.actions && rec.actions.length > 0 ? `<p><strong>Action Items:</strong></p><ul class="actions-list">${rec.actions.map((a: any) => `<li>${a}</li>`).join('')}</ul>` : ''}
+      ${rec.timeline ? `<p><strong>Timeline:</strong> ${rec.timeline}</p>` : ''}
+      ${rec.impact ? `<p><strong>Impact:</strong> ${rec.impact}</p>` : ''}
+    </div>
+  `).join('')}` : ''}
+  
+  ${nextSteps.length > 0 ? `<h2>🎯 Next Steps</h2>
+  <ol>
+  ${nextSteps.map((step: any) => `<li>${typeof step === 'string' ? step : step.text || ''}</li>`).join('')}
+  </ol>
+  ` : ''}
   
   <div class="footer">
     <p>🔷 AI Compass — AI Readiness Assessment Platform</p>
     <p>This report is confidential and intended for the use of the assessed individual/organisation.</p>
+    <p>For questions or support, contact your AI Compass administrator.</p>
   </div>
 </body>
 </html>`;
@@ -384,6 +420,20 @@ export default function AdminDashboardPage() {
         {/* ADMINS */}
         {activePanel==='admins'&&(
           <div>
+            <div style={{marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <button onClick={() => {
+                const name = prompt('Admin name:');
+                const email = prompt('Admin email:');
+                const password = prompt('Temporary password:');
+                if (name && email && password) {
+                  fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role: 'ADMIN' })
+                  }).then(() => loadData());
+                }
+              }} style={{padding:'10px 20px',background:'#0d9488',border:'none',borderRadius:8,color:'#fff',cursor:'pointer'}}>+ Add Admin</button>
+            </div>
             <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
               <table style={{width:'100%',borderCollapse:'collapse'}}>
                 <thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>NAME</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>EMAIL</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>CREATED</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ACTIONS</th></tr></thead>
@@ -393,7 +443,14 @@ export default function AdminDashboardPage() {
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',fontWeight:600,color:'#000'}}>{a.name}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.email}</td>
                       <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{new Date(a.joinedAt).toLocaleDateString()}</td>
-                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><button style={{padding:'4px 8px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Remove Admin</button></td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}>
+                        <button style={{padding:'4px 8px',border:'1px solid #e5e7eb',borderRadius:4,cursor:'pointer',marginRight:4}}>Edit</button>
+                        <button onClick={() => {
+                          if (confirm('Delete this admin? This cannot be undone.')) {
+                            fetch('/api/admin/users/' + a.id, { method: 'DELETE' }).then(() => loadData());
+                          }
+                        }} style={{padding:'4px 8px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Delete</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
