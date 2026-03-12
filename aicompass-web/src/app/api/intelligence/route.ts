@@ -1,38 +1,50 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
     
-  if (!anthropicKey) {
-    return NextResponse.json({ error: 'No key' });
+  if (!openaiKey) {
+    return NextResponse.json({ error: 'No OpenAI key' });
   }
 
   try {
     const body = await request.json();
-    const { company, industry } = body;
+    const { company, industry, country, seniority } = body;
 
-    // Super simple request
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${openaiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: `List 5 key AI trends for ${company} in ${industry}.` }]
+        model: 'gpt-4o-mini',
+        messages: [{
+          role: 'user', 
+          content: `Generate 12-category AI readiness report for ${company} (${industry}, ${country}). 
+
+Return as JSON with categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
+
+Format each as: {"name":"category","fields":[{"fieldName":"X","fieldValue":"2-3 sentences","source":"Y"}],"sources":["Z"]}`}],
+        max_tokens: 1500,
       }),
-      signal: AbortSignal.timeout(8000)
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'Anthropic error', status: response.status });
+      return NextResponse.json({ error: 'OpenAI error', status: response.status });
     }
 
     const data = await response.json();
-    return NextResponse.json({ result: data.content[0].text });
+    const text = data.choices[0].message.content;
+    
+    // Try parse JSON
+    try {
+      const json = JSON.parse(text);
+      return NextResponse.json(json);
+    } catch {
+      return NextResponse.json({ text: text });
+    }
   } catch (e: any) {
     return NextResponse.json({ error: e.message });
   }
