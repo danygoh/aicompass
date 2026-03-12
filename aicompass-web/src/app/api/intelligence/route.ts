@@ -1,49 +1,56 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
     
-  if (!openaiKey) {
-    return NextResponse.json({ error: 'No OpenAI key' });
+  if (!anthropicKey) {
+    return NextResponse.json({ error: 'No API key' });
   }
 
   try {
     const body = await request.json();
     const { company, industry, country, seniority } = body;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`,
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1500,
         messages: [{
           role: 'user', 
-          content: `Generate 12-category AI readiness report for ${company} (${industry}, ${country}). 
+          content: `For ${company} (${industry}, ${country}), give me 12 categories of AI readiness. 
+          
+Respond ONLY as JSON array like this:
+[{"name":"category1","fields":[{"fieldName":"x","fieldValue":"y","source":"z"}]}]
 
-Return as JSON with categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
-
-Format each as: {"name":"category","fields":[{"fieldName":"X","fieldValue":"2-3 sentences","source":"Y"}],"sources":["Z"]}`}],
-        max_tokens: 1500,
+Categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.`
+        }]
       }),
       signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'OpenAI error', status: response.status });
+      return NextResponse.json({ error: 'API error', status: response.status });
     }
 
     const data = await response.json();
-    const text = data.choices[0].message.content;
+    const text = data.content[0].text;
     
-    // Try parse JSON
+    // Try parsing
     try {
-      const json = JSON.parse(text);
-      return NextResponse.json(json);
+      return NextResponse.json(JSON.parse(text));
     } catch {
-      return NextResponse.json({ text: text });
+      // Try extracting JSON
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        return NextResponse.json(JSON.parse(match[0]));
+      }
+      return NextResponse.json({ raw: text });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message });
