@@ -142,8 +142,37 @@ export default function AdminDashboardPage() {
     a.click();
   };
 
-  const downloadReport = (report: any) => {
-    const rd = report.reportData || {};
+  const downloadReport = async (report: any) => {
+    // Fetch fresh report data from API using stored assessment
+    try {
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: {
+            firstName: report.userName?.split(' ')[0] || '',
+            lastName: report.userName?.split(' ').slice(1).join(' ') || '',
+            company: report.company || '',
+            industry: report.industry || '',
+            country: '',
+            seniority: '',
+          },
+          responses: [],
+          intelligence: {},
+          totalScore: report.totalScore,
+          dimensionScores: report.dimensionScores,
+          tier: report.tier,
+          reportId: report.id,
+        }),
+      });
+      
+      var reportData = await response.json();
+    } catch (e) {
+      console.error('Failed to fetch report:', e);
+      reportData = {};
+    }
+    
+    const rd = reportData || {};
     const executiveSummary = rd.executiveSummary || '';
     const recommendations = rd.recommendations || [];
     const nextSteps = rd.nextSteps || [];
