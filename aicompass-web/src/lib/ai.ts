@@ -1,6 +1,6 @@
-// Direct API calls without SDK
+// Direct API calls without SDK - Anthropic first
 
-const TIMEOUT = 30000; // 30 second timeout
+const TIMEOUT = 25000; // 25 second timeout
 
 async function fetchWithTimeout(url: string, options: any, timeout = TIMEOUT) {
   const controller = new AbortController();
@@ -25,10 +25,10 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   console.log('Anthropic key:', !!anthropicKey);
   console.log('DeepSeek key:', !!deepseekKey);
 
-  // Try Anthropic FIRST
+  // Try Anthropic FIRST with Haiku (fastest)
   if (anthropicKey) {
     try {
-      console.log('Calling Anthropic...');
+      console.log('Calling Anthropic (Haiku)...');
       const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -37,11 +37,11 @@ export async function generateWithFallback(prompt: string): Promise<string> {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-3-haiku-20240307',
           max_tokens: 1500,
           messages: [{ role: 'user', content: prompt }],
         }),
-      });
+      }, 20000);
 
       if (!response.ok) {
         const err = await response.text();

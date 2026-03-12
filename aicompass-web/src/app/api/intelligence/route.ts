@@ -1,54 +1,72 @@
 import { NextResponse } from 'next/server';
-
-// Using OpenAI SDK with DeepSeek
-import OpenAI from 'openai';
-
-const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY || '',
-});
+import { generateWithFallback } from '@/lib/ai';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { company, industry, country, seniority, firstName, lastName } = body;
+    const { firstName, lastName, company, industry, jobTitle, seniority, department, country } = body;
 
     if (!company || !industry) {
-      return NextResponse.json({ error: 'Company and industry required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Company and industry are required' },
+        { status: 400 }
+      );
     }
 
-    const prompt = `Generate comprehensive 12-category AI readiness intelligence for ${company}, a ${seniority || 'executive'} in the ${industry} industry.
+    const prompt = `You are an expert AI analyst researching ${company}, a ${seniority || 'executive'} in the ${industry} industry operating in ${country || 'global'}.
 
-Return JSON array with 12 categories. Each: {"name":"category","fields":[{"fieldName":"X","fieldValue":"detailed info","source":"Y"}]}
+Generate a comprehensive 12-category AI readiness intelligence report. Be thorough, specific, and actionable.
 
-Categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
+For each category, provide:
+- name: The category identifier  
+- fields: Array of {fieldName, fieldValue, source} where fieldValue provides 2-4 detailed sentences
+- sources: Array of source names
 
-Each fieldValue: 2-3 sentences with specifics.`;
+CATEGORIES:
+1. professionalProfile - The individual's background and AI involvement
+2. companyOverview - Company size, history, strategic positioning
+3. companyAIPosture - Current AI adoption state and maturity
+4. industryAILandscape - How AI is transforming this industry
+5. regulatoryEnvironment - Relevant AI regulations and compliance
+6. countryAIPolicy - National AI strategy and government initiatives
+7. competitiveIntelligence - What competitors are doing with AI
+8. aiSkillsMarket - Talent availability and skill gaps
+9. technologyStack - Current tech infrastructure readiness
+10. peerBenchmarks - How similar companies are performing
+11. recentAIEvents - Recent AI news relevant to this industry
+12. skillsCredentials - Relevant certifications and training programs
 
-    const response = await deepseek.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 1500,
-    });
+REQUIREMENTS:
+- Each fieldValue must be 2-4 substantive sentences with specific details
+- Include relevant statistics, percentages, timelines
+- Make insights specifically relevant to ${company} in ${industry}
+- Prioritise actionable strategic takeaways
 
-    const text = response.choices[0]?.message?.content || '';
+Return valid JSON only.`;
+
+    const text = await generateWithFallback(prompt);
     
     // Parse JSON
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    let intelligence;
+    
     try {
-      const parsed = JSON.parse(text);
-      return NextResponse.json(parsed);
+      intelligence = JSON.parse(cleaned);
     } catch {
-      // Try extract JSON
-      const match = text.match(/\[[\s\S]*\]/);
+      const match = cleaned.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
       if (match) {
-        return NextResponse.json(JSON.parse(match[0]));
+        intelligence = JSON.parse(match[0]);
+      } else {
+        throw new Error('Failed to parse AI response');
       }
-      return NextResponse.json({ raw: text });
     }
     
+    return NextResponse.json(intelligence);
   } catch (error: any) {
     console.error('Intelligence error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Failed to generate intelligence' },
+      { status: 500 }
+    );
   }
 }
