@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-type Tab = 'overview' | 'users' | 'reports' | 'cohorts' | 'payments' | 'plans' | 'settings' | 'api';
+type Tab = 'overview' | 'users' | 'admins' | 'reports' | 'cohorts' | 'payments' | 'plans' | 'settings' | 'api';
 
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
@@ -195,8 +195,11 @@ Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
   const filteredUsers = users.filter(u => {
     const matchSearch = !userFilter.search || u.name.toLowerCase().includes(userFilter.search.toLowerCase()) || u.email.toLowerCase().includes(userFilter.search.toLowerCase());
     const matchCohort = !userFilter.cohort || u.cohort === userFilter.cohort;
-    return matchSearch && matchCohort;
+    const isNotAdmin = u.role !== 'ADMIN';
+    return matchSearch && matchCohort && isNotAdmin;
   });
+
+  const filteredAdmins = users.filter(u => u.role === 'ADMIN');
 
   if (status === 'loading' || (status === 'authenticated' && loading)) return <div style={{padding:40,textAlign:'center'}}>Loading...</div>;
   if (status !== 'authenticated' || (session?.user as any)?.role !== 'ADMIN') return null;
@@ -209,7 +212,8 @@ Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
         <nav style={{flex:1}}>
           {[
             {id:'overview',icon:'📊',label:'Overview',badge:0},
-            {id:'users',icon:'👥',label:'Users',badge:users.length},
+            {id:'users',icon:'👥',label:'Clients',badge:users.filter(u => u.role !== 'ADMIN').length},
+            {id:'admins',icon:'🔐',label:'Admins',badge:users.filter(u => u.role === 'ADMIN').length},
             {id:'reports',icon:'📄',label:'Reports',badge:reports.length},
             {id:'cohorts',icon:'🏫',label:'Cohorts',badge:cohorts.length},
             {id:'payments',icon:'💳',label:'Payments',badge:0},
@@ -228,7 +232,8 @@ Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
       <div style={{flex:1,padding:24,background:'#f9fafb',overflowY:'auto'}}>
         <h1 style={{fontSize:24,fontWeight:600,color:'#1e3a5f',margin:0,marginBottom:24}}>
           {activePanel==='overview'&&'Overview'}
-          {activePanel==='users'&&'Users'}
+          {activePanel==='users'&&'Clients'}
+          {activePanel==='admins'&&'Admins'}
           {activePanel==='reports'&&'Reports'}
           {activePanel==='cohorts'&&(selectedCohort?selectedCohort.name:'Cohorts')}
           {activePanel==='payments'&&'Payments'}
@@ -350,6 +355,28 @@ Governance & Ethics: ${report.dimensionScores[4] || 0}/20` : ''}
                 </tbody>
               </table>
               {filteredUsers.length===0&&<div style={{padding:40,textAlign:'center',color:'#6b7280'}}>No users found</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ADMINS */}
+        {activePanel==='admins'&&(
+          <div>
+            <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>NAME</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>EMAIL</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>CREATED</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>ACTIONS</th></tr></thead>
+                <tbody>
+                  {filteredAdmins.map(a=>(
+                    <tr key={a.id}>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',fontWeight:600,color:'#000'}}>{a.name}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.email}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{new Date(a.joinedAt).toLocaleDateString()}</td>
+                      <td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><button style={{padding:'4px 8px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:4,color:'#dc2626',cursor:'pointer'}}>Remove Admin</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredAdmins.length===0&&<div style={{padding:40,textAlign:'center',color:'#6b7280'}}>No admins found</div>}
             </div>
           </div>
         )}
