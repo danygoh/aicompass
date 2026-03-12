@@ -1,72 +1,53 @@
 import { NextResponse } from 'next/server';
-import { generateWithFallback } from '@/lib/ai';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { firstName, lastName, company, industry, country, jobTitle, seniority, department } = body;
+    const { company, industry, country, seniority } = body;
 
-    if (!company || !industry) {
-      return NextResponse.json(
-        { error: 'Company and industry are required' },
-        { status: 400 }
-      );
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    
+    if (!anthropicKey) {
+      return NextResponse.json({ error: 'No API key' }, { status: 500 });
     }
 
-    const prompt = `You are an expert AI analyst researching ${company}, a ${seniority || 'executive'} in the ${industry} industry operating in ${country || 'global'}.
+    const prompt = `Generate 12-category AI readiness report for ${company} (${industry}, ${country}). 
+Return JSON with categories: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
+Each has fields: [{fieldName, fieldValue (2-3 sentences), source}].`;
 
-Generate a comprehensive 12-category AI readiness intelligence report. Be thorough, specific, and actionable.
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(25000)
+    });
 
-For each category, provide:
-- name: The category identifier  
-- fields: Array of {fieldName, fieldValue, source} where fieldValue provides 2-4 detailed sentences
-- sources: Array of source names
+    if (!response.ok) {
+      const err = await response.text();
+      return NextResponse.json({ error: 'API error: ' + err }, { status: 500 });
+    }
 
-CATEGORIES:
-1. professionalProfile - The individual's background and AI involvement
-2. companyOverview - Company size, history, strategic positioning
-3. companyAIPosture - Current AI adoption state and maturity
-4. industryAILandscape - How AI is transforming this industry
-5. regulatoryEnvironment - Relevant AI regulations and compliance
-6. countryAIPolicy - National AI strategy and government initiatives
-7. competitiveIntelligence - What competitors are doing with AI
-8. aiSkillsMarket - Talent availability and skill gaps
-9. technologyStack - Current tech infrastructure readiness
-10. peerBenchmarks - How similar companies are performing
-11. recentAIEvents - Recent AI news relevant to this industry
-12. skillsCredentials - Relevant certifications and training programs
-
-REQUIREMENTS:
-- Each fieldValue must be 2-4 substantive sentences with specific details
-- Include relevant statistics, percentages, timelines
-- Make insights specifically relevant to ${company} in ${industry}
-- Prioritise actionable strategic takeaways
-
-Return valid JSON only.`;
-
-    const text = await generateWithFallback(prompt);
+    const data = await response.json();
+    const text = data.content[0].text;
     
-    // Parse JSON
+    // Parse JSON from response
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    let intelligence;
+    const match = cleaned.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
     
-    try {
-      intelligence = JSON.parse(cleaned);
-    } catch {
-      const match = cleaned.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-      if (match) {
-        intelligence = JSON.parse(match[0]);
-      } else {
-        throw new Error('Failed to parse AI response');
-      }
+    if (match) {
+      return NextResponse.json(JSON.parse(match[0]));
     }
     
-    return NextResponse.json(intelligence);
+    return NextResponse.json({ error: 'Failed to parse' }, { status: 500 });
   } catch (error: any) {
-    console.error('Intelligence error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate intelligence' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
