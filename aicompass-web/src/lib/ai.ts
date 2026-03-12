@@ -1,6 +1,5 @@
 import https from 'https';
 
-// Robust JSON repair
 function repairJSON(text: string): any {
   let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
   cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
@@ -14,17 +13,21 @@ function repairJSON(text: string): any {
   return null;
 }
 
-export async function generateWithFallback(prompt: string): Promise<string> {
+export async function generateWithFallback(prompt: string): Promise<any> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('No API key');
 
-  // Ask for all 12 as simple key-value pairs
-  const simplePrompt = `For ${prompt}: give JSON with these 12 keys: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials. Each value is a short sentence. Format: {"key":"value","key2":"value2"}. No arrays.`;
+  // Better prompt that includes user details
+  const fullPrompt = `Generate AI readiness report for: ${prompt}. 
+
+Required JSON with exactly these 12 keys: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
+
+Format: {"key1":"value","key2":"value2"}. Each value is 1-2 sentences about how this relates to the person/company above. Be specific and personalized.`;
 
   const postData = JSON.stringify({
     model: 'claude-opus-4-6',
-    max_tokens: 1500,
-    messages: [{ role: 'user', content: simplePrompt }]
+    max_tokens: 1800,
+    messages: [{ role: 'user', content: fullPrompt }]
   });
 
   return new Promise((resolve, reject) => {

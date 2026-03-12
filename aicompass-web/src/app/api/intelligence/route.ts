@@ -4,19 +4,20 @@ import { generateWithFallback } from '@/lib/ai';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { company, industry } = body;
+    const { firstName, lastName, company, industry, jobTitle, seniority, department, country } = body;
 
     if (!company || !industry) {
       return NextResponse.json({ error: 'Company and industry required' }, { status: 400 });
     }
 
-    // Get simple key-value data
-    const simpleData: any = await generateWithFallback(`${company} in ${industry}`);
+    // Build user context
+    const userParts = [firstName, lastName].filter(Boolean).join(' ');
+    const userContext = [userParts, jobTitle, seniority, department, company, industry, country].filter(Boolean).join(', ');
+
+    const simpleData: any = await generateWithFallback(userContext);
     
-    console.log('Got data type:', typeof simpleData);
-    console.log('Keys:', Object.keys(simpleData || {}));
+    console.log('Got data:', typeof simpleData, Array.isArray(simpleData));
     
-    // Expand to full 12-category format
     const categories = [
       'professionalProfile', 'companyOverview', 'companyAIPosture',
       'industryAILandscape', 'regulatoryEnvironment', 'countryAIPolicy',
@@ -26,22 +27,40 @@ export async function POST(request: Request) {
     
     const intelligence: any = {};
     
-    // If we got a simple object, expand each
+    // Handle both object and array responses
     if (simpleData && typeof simpleData === 'object') {
+      // If it's an array, convert to object
+      let dataObj: any = simpleData;
+      if (Array.isArray(simpleData)) {
+        dataObj = {};
+        for (const item of simpleData) {
+          if (item.name) dataObj[item.name] = item;
+        }
+      }
+      
       for (const cat of categories) {
-        // Try to find matching key (case insensitive)
-        const keys = Object.keys(simpleData);
+        const keys = Object.keys(dataObj);
         const match = keys.find(k => k.toLowerCase().includes(cat.toLowerCase()) || cat.toLowerCase().includes(k.toLowerCase()));
-        const value = match ? simpleData[match] : `${cat} information for ${company}`;
+        const value = match ? dataObj[match] : `${cat} info for ${company}`;
+        
+        // Handle both string and object values
+        let fieldValue = '';
+        if (typeof value === 'string') {
+          fieldValue = value;
+        } else if (value && value.fields && value.fields[0]) {
+          fieldValue = value.fields[0].fieldValue || value.fields[0] || JSON.stringify(value);
+        } else {
+          fieldValue = String(value);
+        }
         
         intelligence[cat] = {
           name: cat,
-          fields: [{ fieldName: 'Summary', fieldValue: String(value).substring(0, 200), source: 'AI Analysis' }],
+          fields: [{ fieldName: 'Summary', fieldValue: String(fieldValue).substring(0, 250), source: 'AI Analysis' }],
           sources: ['AI Analysis']
         };
       }
     } else {
-      throw new Error('No data returned');
+      throw new Error('Invalid response');
     }
     
     return NextResponse.json(intelligence);
