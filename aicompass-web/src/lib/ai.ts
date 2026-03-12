@@ -11,8 +11,8 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   // Try DeepSeek first
   if (hasDeepSeek) {
     try {
-      const { OpenAI } = await import('@ai-sdk/openai');
-      const deepseek = new OpenAI({
+      const { createOpenAI } = await import('@ai-sdk/openai');
+      const deepseek = createOpenAI({
         baseURL: 'https://api.deepseek.com',
         apiKey: process.env.DEEPSEEK_API_KEY!,
       });
@@ -34,8 +34,8 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   // Fallback to Anthropic
   if (hasAnthropic) {
     try {
-      const { Anthropic } = await import('@ai-sdk/anthropic');
-      const anthropic = new Anthropic({
+      const { createAnthropic } = await import('@ai-sdk/anthropic');
+      const anthropic = createAnthropic({
         apiKey: process.env.ANTHROPIC_API_KEY!,
       });
       
