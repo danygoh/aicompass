@@ -24,24 +24,45 @@ export async function POST(request: Request) {
       reportData 
     } = body;
 
-    // If no user session, create or get anonymous user
+    // If no user session, use profile email to find or create user
     if (!userId) {
-      // Check if there's an anonymous user or create one
-      const anonymousUser = await prisma.user.findFirst({
-        where: { email: 'anonymous@aicompass.com' },
-      });
+      const profileEmail = profile?.email;
       
-      if (anonymousUser) {
-        userId = anonymousUser.id;
-      } else {
-        const newUser = await prisma.user.create({
-          data: {
-            email: 'anonymous@aicompass.com',
-            passwordHash: 'anonymous',
-            name: 'Anonymous User',
-          },
+      if (profileEmail) {
+        // Check if user exists with this email
+        let existingUser = await prisma.user.findUnique({
+          where: { email: profileEmail },
         });
-        userId = newUser.id;
+        
+        if (existingUser) {
+          userId = existingUser.id;
+        } else {
+          // Create new user from profile
+          const newUser = await prisma.user.create({
+            data: {
+              email: profileEmail,
+              name: `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'New User',
+              passwordHash: 'pending-registration', // User needs to set password
+            },
+          });
+          userId = newUser.id;
+        }
+      } else {
+        // No email - use or create anonymous user
+        let anonymousUser = await prisma.user.findFirst({
+          where: { email: 'anonymous@aicompass.com' },
+        });
+        
+        if (!anonymousUser) {
+          anonymousUser = await prisma.user.create({
+            data: {
+              email: 'anonymous@aicompass.com',
+              passwordHash: 'anonymous',
+              name: 'Anonymous User',
+            },
+          });
+        }
+        userId = anonymousUser.id;
       }
     }
 
