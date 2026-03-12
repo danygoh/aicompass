@@ -17,16 +17,14 @@ export async function generateWithFallback(prompt: string): Promise<any> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) throw new Error('No API key');
 
-  // Better prompt that includes user details
-  const fullPrompt = `Generate AI readiness report for: ${prompt}. 
+  // Balanced prompt - concise but meaningful
+  const fullPrompt = `For ${prompt}: provide JSON with these 12 keys: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
 
-Required JSON with exactly these 12 keys: professionalProfile, companyOverview, companyAIPosture, industryAILandscape, regulatoryEnvironment, countryAIPolicy, competitiveIntelligence, aiSkillsMarket, technologyStack, peerBenchmarks, recentAIEvents, skillsCredentials.
-
-Format: {"key1":"value","key2":"value2"}. Each value is 1-2 sentences about how this relates to the person/company above. Be specific and personalized.`;
+Format: {"key":"value"}. Each value: 1 sentence about this topic. Be specific.`;
 
   const postData = JSON.stringify({
     model: 'claude-opus-4-6',
-    max_tokens: 1800,
+    max_tokens: 1200,
     messages: [{ role: 'user', content: fullPrompt }]
   });
 
@@ -42,7 +40,7 @@ Format: {"key1":"value","key2":"value2"}. Each value is 1-2 sentences about how 
         'anthropic-version': '2023-06-01',
         'Content-Length': Buffer.byteLength(postData)
       },
-      timeout: 35000
+      timeout: 30000
     }, (res) => {
       let data = '';
       res.on('data', c => data += c);
