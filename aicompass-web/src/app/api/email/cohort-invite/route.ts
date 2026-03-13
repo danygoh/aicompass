@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { sendEmail, getCohortInviteEmailHTML } from '@/lib/email';
 import { CohortInviteSchema } from '@/lib/validations';
+import { addJob } from '@/lib/queue';
 
 export async function POST(request: Request) {
   try {
@@ -48,24 +49,36 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9000';
     const assessmentLink = `${appUrl}/assess/profile`;
 
-    // Send invite to each email
+    // Send invite to each email - queue for async processing
     const results = [];
     for (const email of emails) {
-      const html = getCohortInviteEmailHTML(
-        '', // recipient name - could be extracted from email if needed
+      const queued = await addJob('cohort_invite_email', {
+        email,
+        recipientName: '',
         adminName,
-        cohort.name,
-        cohort.code,
-        assessmentLink
-      );
-
-      const result = await sendEmail({
-        to: email,
-        subject: `You've been invited to ${cohort.name} AI Assessment`,
-        html,
+        companyName: cohort.name,
+        cohortCode: cohort.code,
+        assessmentLink,
       });
 
-      results.push({ email, success: result.success, error: result.error });
+      if (queued) {
+        results.push({ email, success: true, queued: true });
+      } else {
+        // Fallback: send directly
+        const html = getCohortInviteEmailHTML(
+          '',
+          adminName,
+          cohort.name,
+          cohort.code,
+          assessmentLink
+        );
+        const result = await sendEmail({
+          to: email,
+          subject: `You've been invited to ${cohort.name} AI Assessment`,
+          html,
+        });
+        results.push({ email, success: result.success, error: result.error });
+      }
     }
 
     const successCount = results.filter(r => r.success).length;

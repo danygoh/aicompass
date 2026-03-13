@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { sendEmail, getWelcomeEmailHTML, getAssessmentCompleteEmailHTML, getCohortInviteEmailHTML } from '@/lib/email';
 import { AssessmentSaveSchema } from '@/lib/validations';
+import { addJob } from '@/lib/queue';
 
 export async function POST(request: Request) {
   try {
@@ -185,32 +186,49 @@ export async function POST(request: Request) {
     // 1. Welcome email - if this is a new user (we created them in this request)
     const isNewUserFromThisRequest = !session && profileEmail;
     if (isNewUserFromThisRequest && userEmail) {
-      const welcomeHtml = getWelcomeEmailHTML(
+      // Try to queue the job, fallback to direct send
+      const queued = await addJob('welcome_email', {
+        email: userEmail,
         firstName,
-        `${appUrl}/assess/collect`
-      );
-      await sendEmail({
-        to: userEmail,
-        subject: `Welcome to AI Compass${firstName ? `, ${firstName}` : ''}!`,
-        html: welcomeHtml,
+        assessmentLink: `${appUrl}/assess/collect`,
       });
-      console.log('[Email] Welcome email sent to:', userEmail);
+      
+      if (!queued) {
+        // Fallback: send directly if queue not available
+        const welcomeHtml = getWelcomeEmailHTML(firstName, `${appUrl}/assess/collect`);
+        await sendEmail({
+          to: userEmail,
+          subject: `Welcome to AI Compass${firstName ? `, ${firstName}` : ''}!`,
+          html: welcomeHtml,
+        });
+      }
+      console.log('[Email] Welcome email queued for:', userEmail);
     }
 
     // 2. Assessment Complete email - if responses submitted
     if (responses && responses.length > 0 && userEmail) {
-      const assessmentCompleteHtml = getAssessmentCompleteEmailHTML(
+      const queued = await addJob('assessment_complete_email', {
+        email: userEmail,
         firstName,
-        totalScore || 0,
+        score: totalScore || 0,
         tier,
-        `${appUrl}/assess/report/${assessment.id}`
-      );
-      await sendEmail({
-        to: userEmail,
-        subject: 'Assessment Complete - Your Report is Ready!',
-        html: assessmentCompleteHtml,
+        reportLink: `${appUrl}/assess/report/${assessment.id}`,
       });
-      console.log('[Email] Assessment complete email sent to:', userEmail);
+      
+      if (!queued) {
+        const assessmentCompleteHtml = getAssessmentCompleteEmailHTML(
+          firstName,
+          totalScore || 0,
+          tier,
+          `${appUrl}/assess/report/${assessment.id}`
+        );
+        await sendEmail({
+          to: userEmail,
+          subject: 'Assessment Complete - Your Report is Ready!',
+          html: assessmentCompleteHtml,
+        });
+      }
+      console.log('[Email] Assessment complete queued for:', userEmail);
     }
 
     // 3. Cohort Confirmed email - if user joined via cohort
