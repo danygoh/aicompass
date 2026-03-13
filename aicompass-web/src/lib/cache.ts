@@ -50,7 +50,7 @@ export async function setCache<T>(key: string, value: T, ttlSeconds: number): Pr
   }
   
   try {
-    await client.set(key, JSON.stringify(value), { EX: ttlSeconds });
+    await client.set(key, JSON.stringify(value), { ex: ttlSeconds });
     return true;
   } catch (error) {
     console.error('[Cache] Set error:', error);
