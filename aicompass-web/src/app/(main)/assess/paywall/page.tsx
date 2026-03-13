@@ -177,7 +177,7 @@ export default function PaywallPage() {
           >
             <div className="pw-plan-pop">Full Report</div>
             <div className="pw-plan-name">Professional</div>
-            <div className="pw-plan-price"><span>$</span>499</div>
+            <div className="pw-plan-price"><span>$</span>199</div>
             <div className="pw-plan-desc">Full report + PDF + shareable link</div>
             <ul className="pw-plan-feats">
               <li>Full 11-section report</li>
@@ -234,7 +234,7 @@ export default function PaywallPage() {
         {selectedPlan === 'professional' && (
           <div className="pw-pay-form">
             <div className="pw-form-title">Payment Details</div>
-            <div className="pw-form-sub">Secure checkout · $499 one-time</div>
+            <div className="pw-form-sub">Secure checkout · $199 one-time</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input className="pw-fi" type="text" placeholder="Name on card" />
               <input className="pw-fi" type="email" placeholder="Email address" defaultValue={profile.email} />
@@ -252,7 +252,7 @@ export default function PaywallPage() {
               onClick={handleUnlock}
               disabled={processing}
             >
-              {processing ? 'Processing...' : 'Unlock My Report — $499 →'}
+              {processing ? 'Processing...' : 'Unlock My Report — $199 →'}
             </button>
           </div>
         )}

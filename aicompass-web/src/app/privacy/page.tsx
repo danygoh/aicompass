@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
           <li><strong>Right to object:</strong> Object to processing based on legitimate interests</li>
           <li><strong>Rights related to automated decision-making:</strong> You have the right not to be subject to decisions based solely on automated processing that significantly affect you</li>
         </ul>
-        <p style={{ marginTop: 12 }}>To exercise any of these rights, contact us at <strong>danny@ainativefoundation.org</strong></p>
+        <p style={{ marginTop: 12 }}>To exercise any of these rights, contact us at <strong>support@ainativefoundation.org</strong></p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
@@ -121,7 +121,7 @@ export default function PrivacyPolicy() {
       <section style={{ marginBottom: 32 }}>
         <h2>13. Contact Us</h2>
         <p>If you have any questions about this Privacy Policy, please contact us:</p>
-        <p style={{ marginTop: 12 }}><strong>Email:</strong> danny@ainativefoundation.org</p>
+        <p style={{ marginTop: 12 }}><strong>Email:</strong> support@ainativefoundation.org</p>
         <p><strong>Organization:</strong> AI Native Foundation</p>
         <p><strong>Company Number:</strong> 15519232 (England and Wales)</p>
         <p><strong>Registered Address:</strong> England and Wales</p>

@@ -170,7 +170,7 @@ export default function TermsOfService() {
       <section style={{ marginBottom: 32 }}>
         <h2>17. Contact Information</h2>
         <p>If you have any questions about these Terms, please contact us:</p>
-        <p style={{ marginTop: 12 }}><strong>Email:</strong> danny@ainativefoundation.org</p>
+        <p style={{ marginTop: 12 }}><strong>Email:</strong> support@ainativefoundation.org</p>
         <p><strong>Organization:</strong> AI Native Foundation</p>
         <p><strong>Company Number:</strong> 15519232 (England and Wales)</p>
       </section>

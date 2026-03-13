@@ -56,6 +56,10 @@ export default function AdminDashboardPage() {
   const [cohortMembers, setCohortMembers] = useState<any[]>([]);
   const [userFilter, setUserFilter] = useState({ search: '', cohort: '' });
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteResult, setInviteResult] = useState<any>(null);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', company: '', tier: 'FREE' });
   const [settings, setSettings] = useState<any>({});
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -218,6 +222,31 @@ export default function AdminDashboardPage() {
     const res = await fetch('/api/admin/cohorts/' + selectedCohort.id + '/members');
     const data = await res.json();
     setCohortMembers(data.members || []);
+  };
+
+  const sendCohortInvites = async () => {
+    if (!selectedCohort || !inviteEmails.trim()) return;
+    setInviteLoading(true);
+    setInviteResult(null);
+    
+    const emails = inviteEmails.split(/[,;\n]/).map(e => e.trim()).filter(e => e.includes('@'));
+    
+    try {
+      const res = await fetch('/api/email/cohort-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cohortId: selectedCohort.id, emails })
+      });
+      const data = await res.json();
+      setInviteResult(data);
+      if (data.success) {
+        setInviteEmails('');
+      }
+    } catch (err) {
+      setInviteResult({ error: 'Failed to send invites' });
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   const deleteCohort = async (id: string) => { if (!confirm('Delete cohort?')) return; await fetch('/api/admin/cohorts?id=' + id, { method: 'DELETE' }); loadData(); };
@@ -504,6 +533,7 @@ export default function AdminDashboardPage() {
           {activePanel==='questions'&&'Question Bank'}
         </h1>
         {selectedCohort&&<button onClick={()=>setSelectedCohort(null)} style={{marginBottom:16,padding:'8px 16px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:6,cursor:'pointer'}}>Back</button>}
+        {selectedCohort&&<button onClick={()=>setShowInviteModal(true)} style={{marginBottom:16,marginLeft:8,padding:'8px 16px',background:'#7c3aed',border:'none',borderRadius:6,color:'#fff',cursor:'pointer'}}>Send Invites</button>}
 
         {/* OVERVIEW */}
         {activePanel==='overview'&&(
@@ -1050,6 +1080,46 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* COHORT INVITE MODAL */}
+        {showInviteModal && selectedCohort && (
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+            <div style={{background:'#fff',borderRadius:12,padding:24,maxWidth:500,width:'90%'}}>
+              <h2 style={{margin:'0 0 16px',fontSize:20,color:'#000'}}>Send Cohort Invites</h2>
+              <p style={{margin:'0 0 16px',fontSize:14,color:'#374151'}}>
+                Invite team members to join <strong style={{color:'#000'}}>{selectedCohort.name}</strong>. Enter email addresses separated by commas or new lines.
+              </p>
+              <p style={{margin:'0 0 8px',fontSize:12,fontWeight:600,color:'#000'}}>Cohort Code: <span style={{fontFamily:'monospace',background:'#f3f4f6',padding:'4px 8px',borderRadius:4,color:'#000'}}>{selectedCohort.code}</span></p>
+              <textarea
+                value={inviteEmails}
+                onChange={(e) => setInviteEmails(e.target.value)}
+                placeholder="email@example.com, another@example.com"
+                rows={4}
+                style={{width:'100%',padding:12,border:'1px solid #e5e7eb',borderRadius:8,fontSize:14,resize:'vertical',marginBottom:16,color:'#000',background:'#fff'}}
+              />
+              {inviteResult && (
+                <div style={{padding:12,borderRadius:8,background:inviteResult.success ? '#dcfce7' : '#fee2e2',color:inviteResult.success ? '#16a34a' : '#dc2626',fontSize:14,marginBottom:16}}>
+                  {inviteResult.message || inviteResult.error}
+                </div>
+              )}
+              <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
+                <button 
+                  onClick={()=>{setShowInviteModal(false);setInviteResult(null);setInviteEmails('');}}
+                  style={{padding:'12px 24px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:8,cursor:'pointer',color:'#000'}}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={sendCohortInvites}
+                  disabled={inviteLoading || !inviteEmails.trim()}
+                  style={{padding:'12px 24px',background:inviteLoading ? '#9ca3af' : '#7c3aed',border:'none',borderRadius:8,color:'#fff',cursor:inviteLoading ? 'not-allowed' : 'pointer',fontWeight:500}}
+                >
+                  {inviteLoading ? 'Sending...' : 'Send Invites'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

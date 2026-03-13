@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { sendEmail, getWelcomeEmailHTML, getAssessmentCompleteEmailHTML, getCohortInviteEmailHTML } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
@@ -157,6 +158,71 @@ export async function POST(request: Request) {
           }))
           .filter((r: any) => r.answer !== null),
       });
+    }
+
+    // ========================================
+    // EMAIL NOTIFICATIONS
+    // ========================================
+    
+    const userEmail = profile?.email;
+    const firstName = profile?.firstName || '';
+    const cohortCode = profile?.cohortCode || '';
+    const profileEmail = profile?.email;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9000';
+
+    // 1. Welcome email - if this is a new user (we created them in this request)
+    const isNewUserFromThisRequest = !session && profileEmail;
+    if (isNewUserFromThisRequest && userEmail) {
+      const welcomeHtml = getWelcomeEmailHTML(
+        firstName,
+        `${appUrl}/assess/collect`
+      );
+      await sendEmail({
+        to: userEmail,
+        subject: `Welcome to AI Compass${firstName ? `, ${firstName}` : ''}!`,
+        html: welcomeHtml,
+      });
+      console.log('[Email] Welcome email sent to:', userEmail);
+    }
+
+    // 2. Assessment Complete email - if responses submitted
+    if (responses && responses.length > 0 && userEmail) {
+      const assessmentCompleteHtml = getAssessmentCompleteEmailHTML(
+        firstName,
+        totalScore || 0,
+        tier,
+        `${appUrl}/assess/report/${assessment.id}`
+      );
+      await sendEmail({
+        to: userEmail,
+        subject: 'Assessment Complete - Your Report is Ready!',
+        html: assessmentCompleteHtml,
+      });
+      console.log('[Email] Assessment complete email sent to:', userEmail);
+    }
+
+    // 3. Cohort Confirmed email - if user joined via cohort
+    if (cohortCode && userEmail) {
+      // Get cohort details
+      const cohort = await prisma.cohort.findUnique({
+        where: { code: cohortCode },
+      });
+      
+      if (cohort) {
+        const cohortInviteHtml = getCohortInviteEmailHTML(
+          firstName,
+          'Your Organization',
+          cohort.name,
+          cohortCode,
+          `${appUrl}/assess/report/${assessment.id}`
+        );
+        await sendEmail({
+          to: userEmail,
+          subject: `You're in! ${cohort.name} AI Assessment`,
+          html: cohortInviteHtml,
+        });
+        console.log('[Email] Cohort confirmed email sent to:', userEmail);
+      }
     }
 
     return NextResponse.json({

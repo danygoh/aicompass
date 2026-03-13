@@ -334,7 +334,7 @@ export default function LandingPage() {
             <span>Begin Your Assessment</span>
             <span className="bh-arr">→</span>
           </button>
-          <div className="cta-sub">Free to complete · Report from $499 · No account required</div>
+          <div className="cta-sub">Free to complete · Report from $199 · No account required</div>
           <div className="cta-admin-link">
             <button onClick={() => router.push('/admin/login')} className="cta-admin-btn">Admin Portal →</button>
           </div>
@@ -353,7 +353,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
             <a href="/privacy" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Privacy Policy</a>
             <a href="/terms" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Terms of Service</a>
-            <a href="mailto:danny@ainativefoundation.org" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Contact</a>
+            <a href="mailto:support@ainativefoundation.org" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Contact</a>
           </div>
         </div>
       </footer>
