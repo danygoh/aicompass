@@ -705,8 +705,8 @@ export default function AdminDashboardPage() {
         {activePanel==='plans'&&(
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
             {[
-              {name:'Professional',price:499,desc:'For individuals'},
-              {name:'Team',price:399,desc:'For teams'},
+              {name:'Professional',price:199,desc:'For individuals'},
+              {name:'Team',price:149,desc:'For teams'},
               {name:'Enterprise',price:0,desc:'Custom pricing'}
             ].map((plan,i)=>(
               <div key={i} style={{background:'#fff',border:plan.name==='Professional'?'2px solid #0d9488':'1px solid #e5e7eb',borderRadius:12,padding:24,position:'relative'}}>

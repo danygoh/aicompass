@@ -247,7 +247,7 @@ export default function LandingPage() {
             <div className="price-card price-featured">
               <div className="price-pop">Most Popular</div>
               <div className="price-plan">Professional</div>
-              <div className="price-amt"><span className="price-curr">$</span>499</div>
+              <div className="price-amt"><span className="price-curr">$</span>199</div>
               <div className="price-cadence">One-time · Instant access</div>
               <div className="price-desc">Your complete intelligence report with retake, progress tracking, and PDF download.</div>
               <ul className="price-feats">
@@ -265,7 +265,7 @@ export default function LandingPage() {
             {/* Team */}
             <div className="price-card">
               <div className="price-plan">Team / Cohort</div>
-              <div className="price-amt"><span className="price-curr">$</span>399</div>
+              <div className="price-amt"><span className="price-curr">$</span>149</div>
               <div className="price-cadence">Per participant · Min 10</div>
               <div className="price-desc">For cohort-based programmes, workshops, or team capability assessments.</div>
               <ul className="price-feats">
@@ -348,12 +348,12 @@ export default function LandingPage() {
             AI <span style={{ color: '#f59e0b' }}>Compass</span>
           </div>
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 20 }}>
-            © 2026 Nexus FrontierTech. All rights reserved.
+            © 2026 AI Native Foundation (Company No. 15519232). All rights reserved.
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
             <a href="/privacy" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Privacy Policy</a>
             <a href="/terms" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Terms of Service</a>
-            <a href="mailto:contact@aicompass.ai" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Contact</a>
+            <a href="mailto:danny@ainativefoundation.org" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Contact</a>
           </div>
         </div>
       </footer>

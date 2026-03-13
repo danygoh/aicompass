@@ -29,9 +29,9 @@ export const metadata: Metadata = {
   },
   description: "The only AI readiness assessment that researches and validates intelligence about you and your organization before asking a single question. Get your personalized 11-section report.",
   keywords: ["AI readiness", "AI assessment", "artificial intelligence", "AI strategy", "digital transformation", "AI literacy", "enterprise AI"],
-  authors: [{ name: "Nexus FrontierTech" }],
-  creator: "Nexus FrontierTech",
-  publisher: "Nexus FrontierTech",
+  authors: [{ name: "AI Native Foundation" }],
+  creator: "AI Native Foundation",
+  publisher: "AI Native Foundation",
   metadataBase: new URL('https://ainativefoundation.org/aicompass'),
   openGraph: {
     type: 'website',
