@@ -45,11 +45,15 @@ Format: {"key":"value"}. Each value: 1 sentence about this topic. Be specific.`;
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
+        console.log('[DEBUG] Anthropic response status:', res.statusCode);
+        console.log('[DEBUG] Anthropic raw response:', data.substring(0, 500));
         if (res.statusCode !== 200) { reject(new Error(`API: ${res.statusCode}`)); return; }
         try {
           const parsed = JSON.parse(data);
+          console.log('[DEBUG] Parsed response:', JSON.stringify(parsed).substring(0, 300));
           const text = parsed.content[0].text;
           const repaired = repairJSON(text);
+          console.log('[DEBUG] repairJSON result:', repaired ? 'success' : 'failed, using raw text');
           if (repaired) resolve(repaired);
           else resolve(text);
         } catch(e) { reject(e); }
