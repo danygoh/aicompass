@@ -10,13 +10,13 @@ export async function GET(request: Request) {
 
     // Validate with Zod
     const validation = CohortValidateSchema.safeParse({ code });
-    if (!validation.success) {
+    if (!validation.success || !validation.data.code) {
       return NextResponse.json({ valid: false, error: 'Invalid code' }, { status: 400 });
     }
 
     const cohort = await prisma.cohort.findFirst({
       where: {
-        code: code.toUpperCase(),
+        code: validation.data.code.toUpperCase(),
         status: 'ACTIVE',
       },
     });
