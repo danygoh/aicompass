@@ -30,7 +30,8 @@ export default function CollectPage() {
       });
 
       const data = await res.json();
-      setIntelligence(data);
+      // API returns { intelligence, dataSource, timestamp }
+      setIntelligence(data.intelligence || data);
       
       // Animate through categories
       for (let i = 0; i <= INTELLIGENCE_CATEGORIES.length; i++) {

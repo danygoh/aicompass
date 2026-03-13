@@ -61,6 +61,12 @@ Format: {"key":"value"}. Each value: 1 sentence about this topic. Be specific.`;
     });
     req.on('error', reject);
     req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+    
+    // Safety timeout - 20 seconds max
+    setTimeout(() => {
+      req.destroy();
+      reject(new Error('Timeout'));
+    }, 20000);
     req.write(postData);
     req.end();
   });

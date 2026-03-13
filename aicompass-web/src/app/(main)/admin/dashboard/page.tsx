@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-type Tab = 'overview' | 'users' | 'admins' | 'reports' | 'cohorts' | 'payments' | 'plans' | 'settings' | 'api';
+type Tab = 'overview' | 'users' | 'admins' | 'reports' | 'cohorts' | 'payments' | 'plans' | 'settings' | 'api' | 'questions';
 
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
@@ -15,6 +15,41 @@ export default function AdminDashboardPage() {
   const [cohorts, setCohorts] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [editingQuestion, setEditingQuestion] = useState<any>(null);
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [questionFilter, setQuestionFilter] = useState({ dimension: '', difficulty: '', search: '' });
+  const [newQuestion, setNewQuestion] = useState({
+    dimension: 0,
+    difficulty: 'medium',
+    tags: '',
+    variants: [
+      { variantType: 'standard', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+      { variantType: 'stretch', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+      { variantType: 'diagnostic', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+    ]
+  });
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingQuestion) {
+      setNewQuestion({
+        dimension: editingQuestion.dimension || 0,
+        difficulty: editingQuestion.difficulty || 'medium',
+        tags: editingQuestion.tags?.join(', ') || '',
+        variants: editingQuestion.variants?.map((v: any) => ({
+          variantType: v.variantType,
+          questionText: v.questionText || '',
+          options: v.options || ['', '', '', ''],
+          correctAnswer: v.correctAnswer || 0
+        })) || [
+          { variantType: 'standard', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+          { variantType: 'stretch', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+          { variantType: 'diagnostic', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+        ]
+      });
+    }
+  }, [editingQuestion]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedCohort, setSelectedCohort] = useState<any>(null);
@@ -37,19 +72,21 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [u, a, c, p, r, s] = await Promise.all([
+      const [u, a, c, p, r, s, q] = await Promise.all([
         fetch('/api/admin/users').then(r => r.json()),
         fetch('/api/admin/assessments').then(r => r.json()),
         fetch('/api/admin/cohorts').then(r => r.json()),
         fetch('/api/admin/payments').then(r => r.json()),
         fetch('/api/admin/reports').then(r => r.json()),
         fetch('/api/admin/settings').then(r => r.json()),
+        fetch('/api/admin/questions').then(r => r.json()),
       ]);
       setUsers(u.users || []);
       setAssessments(a.assessments || []);
       setCohorts(c.cohorts || []);
       setPayments(p.payments || []);
       setReports(r.reports || []);
+      setQuestions(q || []);
       setSettings(s.settings || {});
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -61,12 +98,12 @@ export default function AdminDashboardPage() {
   const completionRate = assessments.length > 0 ? Math.round((completedAssessments.length / assessments.length) * 100) : 0;
   
   const tierStats = {
-    free: users.filter(u => u.tier === 'Free' || u.tier === 'FREE').length,
-    paid: users.filter(u => u.tier && u.tier !== 'Free' && u.tier !== 'FREE').length,
-    cohort: users.filter(u => u.tier === 'Cohort').length,
+    free: users.filter(u => u.role !== 'ADMIN' && (u.tier === 'Free' || u.tier === 'FREE')).length,
+    paid: users.filter(u => u.role !== 'ADMIN' && u.tier && u.tier !== 'Free' && u.tier !== 'FREE').length,
+    cohort: users.filter(u => u.role !== 'ADMIN' && u.tier === 'Cohort').length,
   };
 
-  const recentActivity = [...users].sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()).slice(0, 20);
+  const recentActivity = [...users].filter(u => u.role !== 'ADMIN').sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()).slice(0, 20);
   const latestReports = [...reports].sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()).slice(0, 20);
 
   // Monthly revenue
@@ -115,6 +152,48 @@ export default function AdminDashboardPage() {
   const deleteUser = async (id: string) => {
     if (!confirm('Delete user?')) return;
     await fetch('/api/admin/users/' + id, { method: 'DELETE' });
+    loadData();
+  };
+
+  const saveQuestion = async () => {
+    const payload = {
+      dimension: newQuestion.dimension,
+      difficulty: newQuestion.difficulty,
+      tags: newQuestion.tags.split(',').map(t => t.trim()).filter(Boolean),
+      variants: newQuestion.variants.map(v => ({
+        variantType: v.variantType,
+        questionText: v.questionText,
+        options: v.options,
+        correctAnswer: v.correctAnswer
+      }))
+    };
+    
+    if (editingQuestion) {
+      await fetch('/api/admin/questions/' + editingQuestion.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch('/api/admin/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+    
+    setShowAddQuestion(false);
+    setEditingQuestion(null);
+    setNewQuestion({
+      dimension: 0,
+      difficulty: 'medium',
+      tags: '',
+      variants: [
+        { variantType: 'standard', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+        { variantType: 'stretch', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+        { variantType: 'diagnostic', questionText: '', options: ['', '', '', ''], correctAnswer: 0 },
+      ]
+    });
     loadData();
   };
 
@@ -400,7 +479,8 @@ export default function AdminDashboardPage() {
             {id:'payments',icon:'💳',label:'Payments',badge:0},
             {id:'plans',icon:'📦',label:'Plans & Pricing',badge:0},
             {id:'settings',icon:'⚙️',label:'Settings',badge:0},
-            {id:'api',icon:'🔌',label:'API',badge:0}
+            {id:'api',icon:'🔌',label:'API',badge:0},
+            {id:'questions',icon:'❓',label:'Questions',badge:Array.isArray(questions) ? questions.length : 0}
           ].map(item => (
             <button key={item.id} onClick={()=>{setSelectedCohort(null);setActivePanel(item.id as Tab)}} style={{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'10px 12px',background:activePanel===item.id?'#f0fdfa':'transparent',border:'none',borderRadius:8,fontSize:13,color:activePanel===item.id?'#0d9488':'#374151',cursor:'pointer',textAlign:'left',marginBottom:4}}>
               {item.icon} {item.label} {item.badge>0&&<span style={{marginLeft:'auto',fontSize:10,background:'#0d9488',color:'#fff',padding:'2px 6px',borderRadius:10}}>{item.badge}</span>}
@@ -421,6 +501,7 @@ export default function AdminDashboardPage() {
           {activePanel==='plans'&&'Plans & Pricing'}
           {activePanel==='settings'&&'Settings'}
           {activePanel==='api'&&'API & Integrations'}
+          {activePanel==='questions'&&'Question Bank'}
         </h1>
         {selectedCohort&&<button onClick={()=>setSelectedCohort(null)} style={{marginBottom:16,padding:'8px 16px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:6,cursor:'pointer'}}>Back</button>}
 
@@ -429,7 +510,7 @@ export default function AdminDashboardPage() {
           <div>
             {/* Stats Grid */}
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:24}}>
-              <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:32,fontWeight:600,color:'#000'}}>{users.length}</div><div style={{fontSize:12,color:'#6b7280'}}>Total Users</div></div>
+              <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:32,fontWeight:600,color:'#000'}}>{users.filter(u => u.role !== 'ADMIN').length}</div><div style={{fontSize:12,color:'#6b7280'}}>Total Clients</div></div>
               <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:32,fontWeight:600,color:'#000'}}>{completedAssessments.length}</div><div style={{fontSize:12,color:'#6b7280'}}>Completed</div></div>
               <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:32,fontWeight:600,color:'#000'}}>{completionRate}%</div><div style={{fontSize:12,color:'#6b7280'}}>Completion Rate</div></div>
               <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:20}}><div style={{fontSize:32,fontWeight:600,color:'#16a34a'}}>${payments.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0).toLocaleString()}</div><div style={{fontSize:12,color:'#6b7280'}}>Revenue</div></div>
@@ -474,7 +555,7 @@ export default function AdminDashboardPage() {
               <table style={{width:'100%',borderCollapse:'collapse'}}>
                 <thead><tr><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>USER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>COMPANY</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>SCORE</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>TIER</th><th style={{textAlign:'left',padding:12,fontSize:11,fontWeight:600,color:'#6b7280',borderBottom:'1px solid #e5e7eb'}}>COMPLETED</th></tr></thead>
                 <tbody>
-                  {latestReports.map((a,i)=><tr key={i}><td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><div style={{fontWeight:600,color:'#000'}}>{a.user}</div></td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.company || '-'}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}><span style={{fontWeight:600,color:'#f59e0b'}}>{a.score}</span></td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.tier || '-'}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.completedAt ? new Date(a.completedAt).toLocaleDateString() : '-'}</td></tr>)}
+                  {latestReports.map((a,i)=><tr key={i}><td style={{padding:12,borderBottom:'1px solid #e5e7eb'}}><div style={{fontWeight:600,color:'#000'}}>{a.userName || 'Unknown'}</div><div style={{fontSize:11,color:'#6b7280'}}>{a.email}</div></td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.company || '-'}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}><span style={{fontWeight:600,color:'#f59e0b'}}>{a.totalScore || 0}</span></td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.tier || '-'}</td><td style={{padding:12,borderBottom:'1px solid #e5e7eb',color:'#000'}}>{a.completedAt ? new Date(a.completedAt).toLocaleDateString() : '-'}</td></tr>)}
                   {latestReports.length===0&&<tr><td colSpan={5} style={{padding:40,textAlign:'center',color:'#6b7280'}}>No reports</td></tr>}
                 </tbody>
               </table>
@@ -740,6 +821,235 @@ export default function AdminDashboardPage() {
               <div style={{fontSize:12,color:'#6b7280',marginTop:4}}>Powers report generation</div>
               <div style={{marginTop:12}}><label style={{display:'block',fontSize:12,fontWeight:500,color:'#000',marginBottom:6}}>API Key</label><input type="password" defaultValue="sk-ant-xxxxxxxxxxxxxxxx" style={{width:'100%',padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:8,fontSize:13,fontFamily:'monospace'}} /></div>
             </div>
+          </div>
+        )}
+
+        {/* QUESTIONS */}
+        {activePanel==='questions'&&(
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            {/* Filters */}
+            <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,padding:16,display:'flex',gap:12,flexWrap:'wrap',alignItems:'center'}}>
+              <select 
+                value={questionFilter.dimension} 
+                onChange={(e)=>setQuestionFilter({...questionFilter, dimension: e.target.value})}
+                style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:6,fontSize:13}}
+              >
+                <option value="">All Dimensions</option>
+                <option value="0">AI Literacy</option>
+                <option value="1">Data Readiness</option>
+                <option value="2">Workflow Integration</option>
+                <option value="3">Governance & Risk</option>
+                <option value="4">Strategic Alignment</option>
+              </select>
+              <select 
+                value={questionFilter.difficulty} 
+                onChange={(e)=>setQuestionFilter({...questionFilter, difficulty: e.target.value})}
+                style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:6,fontSize:13}}
+              >
+                <option value="">All Difficulties</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+              <input 
+                type="text" 
+                placeholder="Search questions..."
+                value={questionFilter.search}
+                onChange={(e)=>setQuestionFilter({...questionFilter, search: e.target.value})}
+                style={{padding:'8px 12px',border:'1px solid #e5e7eb',borderRadius:6,fontSize:13,flex:1}}
+              />
+              <button 
+                onClick={()=>setShowAddQuestion(true)}
+                style={{padding:'8px 16px',background:'#0d9488',color:'#fff',border:'none',borderRadius:6,fontSize:13,cursor:'pointer',fontWeight:500}}
+              >
+                + Add Question
+              </button>
+            </div>
+
+            {/* Questions List */}
+            <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:12,overflow:'hidden'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+                <thead>
+                  <tr style={{background:'#f9fafb',borderBottom:'1px solid #e5e7eb'}}>
+                    <th style={{textAlign:'left',padding:'12px 16px',fontWeight:600,color:'#374151'}}>#</th>
+                    <th style={{textAlign:'left',padding:'12px 16px',fontWeight:600,color:'#374151'}}>Dimension</th>
+                    <th style={{textAlign:'left',padding:'12px 16px',fontWeight:600,color:'#374151'}}>Difficulty</th>
+                    <th style={{textAlign:'left',padding:'12px 16px',fontWeight:600,color:'#374151'}}>Question</th>
+                    <th style={{textAlign:'left',padding:'12px 16px',fontWeight:600,color:'#374151'}}>Variants</th>
+                    <th style={{textAlign:'left',padding:'12px 16px',fontWeight:600,color:'#374151'}}>Status</th>
+                    <th style={{textAlign:'right',padding:'12px 16px',fontWeight:600,color:'#374151'}}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.isArray(questions) && questions.filter(q => {
+                    if (questionFilter.dimension && q.dimension !== parseInt(questionFilter.dimension)) return false;
+                    if (questionFilter.difficulty && q.difficulty !== questionFilter.difficulty) return false;
+                    if (questionFilter.search) {
+                      const search = questionFilter.search.toLowerCase();
+                      const matchText = q.variants?.some((v:any)=>v.questionText?.toLowerCase().includes(search));
+                      const matchTag = q.tags?.some((t:any)=>t.toLowerCase().includes(search));
+                      if (!matchText && !matchTag) return false;
+                    }
+                    return true;
+                  }).map((q, idx) => (
+                    <tr key={q.id} style={{borderBottom:'1px solid #e5e7eb'}}>
+                      <td style={{padding:'12px 16px',color:'#6b7280'}}>{idx + 1}</td>
+                      <td style={{padding:'12px 16px',color:'#374151'}}>{['AI Literacy','Data Readiness','Workflow Integration','Governance & Risk','Strategic Alignment'][q.dimension] || q.dimension}</td>
+                      <td style={{padding:'12px 16px',color:'#374151'}}>
+                        <span style={{padding:'2px 8px',borderRadius:4,fontSize:11,fontWeight:500,
+                          background: q.difficulty==='easy'?'#d1fae5':q.difficulty==='medium'?'#fef3c7':'#fee2e2',
+                          color: q.difficulty==='easy'?'#065f46':q.difficulty==='medium'?'#92400e':'#991b1b'
+                        }}>{q.difficulty}</span>
+                      </td>
+                      <td style={{padding:'12px 16px',maxWidth:300,color:'#374151'}}>{q.variants?.[0]?.questionText?.substring(0,60) || '—'}...</td>
+                      <td style={{padding:'12px 16px',color:'#374151'}}>{q.variants?.length || 0}</td>
+                      <td style={{padding:'12px 16px',color:'#374151'}}>
+                        <span style={{padding:'2px 8px',borderRadius:4,fontSize:11,fontWeight:500,
+                          background: q.isActive ? '#d1fae5' : '#f3f4f6',
+                          color: q.isActive ? '#065f46' : '#6b7280'
+                        }}>{q.isActive ? 'Active' : 'Archived'}</span>
+                      </td>
+                      <td style={{padding:'12px 16px',textAlign:'right'}}>
+                        <button 
+                          onClick={()=>{setEditingQuestion(q);setShowAddQuestion(true)}}
+                          style={{marginRight:8,padding:'4px 10px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:4,fontSize:12,cursor:'pointer',color:'#374151'}}
+                        >Edit</button>
+                        <button 
+                          onClick={async () => {
+                            if (!confirm('Archive this question?')) return;
+                            await fetch('/api/admin/questions/' + q.id, { method: 'DELETE' });
+                            loadData();
+                          }}
+                          style={{padding:'4px 10px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:4,fontSize:12,cursor:'pointer',color:'#991b1b'}}
+                        >Archive</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {Array.isArray(questions) && questions.length === 0 && (
+                <div style={{padding:40,textAlign:'center',color:'#6b7280'}}>
+                  No questions yet. Click "Add Question" to create one.
+                </div>
+              )}
+            </div>
+
+            {/* Add/Edit Question Modal */}
+            {showAddQuestion && (
+              <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+                <div style={{background:'#fff',borderRadius:12,width:'90%',maxWidth:800,maxHeight:'90vh',overflow:'auto',padding:24}}>
+                  <div style={{fontSize:18,fontWeight:600,marginBottom:20}}>
+                    {editingQuestion ? 'Edit Question' : 'Add New Question'}
+                  </div>
+                  
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:20}}>
+                    <div>
+                      <label style={{fontSize:12,color:'#374151',display:'block',marginBottom:4}}>Dimension *</label>
+                      <select 
+                        value={newQuestion.dimension} 
+                        onChange={(e)=>setNewQuestion({...newQuestion, dimension: parseInt(e.target.value)})}
+                        style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8,color:'#000',background:'#fff'}}
+                      >
+                        <option value={0}>AI Literacy</option>
+                        <option value={1}>Data Readiness</option>
+                        <option value={2}>Workflow Integration</option>
+                        <option value={3}>Governance & Risk</option>
+                        <option value={4}>Strategic Alignment</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{fontSize:12,color:'#374151',display:'block',marginBottom:4}}>Difficulty</label>
+                      <select 
+                        value={newQuestion.difficulty} 
+                        onChange={(e)=>setNewQuestion({...newQuestion, difficulty: e.target.value})}
+                        style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8,color:'#000',background:'#fff'}}
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+                    <div style={{gridColumn:'1 / -1'}}>
+                      <label style={{fontSize:12,color:'#374151',display:'block',marginBottom:4}}>Tags (comma separated)</label>
+                      <input 
+                        value={newQuestion.tags}
+                        onChange={(e)=>setNewQuestion({...newQuestion, tags: e.target.value})}
+                        placeholder="e.g., leadership, technical, compliance"
+                        style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8,color:'#000',background:'#fff'}}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontSize:14,fontWeight:600,marginBottom:12}}>Question Variants</div>
+                    {newQuestion.variants.map((v, idx) => (
+                      <div key={v.variantType} style={{background:'#f9fafb',border:'1px solid #e5e7eb',borderRadius:8,padding:16,marginBottom:12}}>
+                        <div style={{fontSize:12,fontWeight:600,color:'#0d9488',marginBottom:8}}>
+                          {v.variantType.toUpperCase()} Variant
+                        </div>
+                        <div style={{marginBottom:12}}>
+                          <label style={{fontSize:11,color:'#374151',display:'block',marginBottom:4}}>Question Text</label>
+                          <textarea 
+                            value={v.questionText}
+                            onChange={(e)=>{
+                              const newVars = [...newQuestion.variants];
+                              newVars[idx].questionText = e.target.value;
+                              setNewQuestion({...newQuestion, variants: newVars});
+                            }}
+                            placeholder="Enter question..."
+                            style={{width:'100%',padding:10,border:'1px solid #e5e7eb',borderRadius:8,minHeight:60,fontSize:13,color:'#000',background:'#fff'}}
+                          />
+                        </div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                          {v.options.map((opt, optIdx) => (
+                            <div key={optIdx}>
+                              <label style={{fontSize:10,color:'#374151',display:'flex',alignItems:'center',gap:4,marginBottom:2}}>
+                                <input 
+                                  type="radio" 
+                                  name={`correct-${v.variantType}`}
+                                  checked={v.correctAnswer === optIdx}
+                                  onChange={()=>{
+                                    const newVars = [...newQuestion.variants];
+                                    newVars[idx].correctAnswer = optIdx;
+                                    setNewQuestion({...newQuestion, variants: newVars});
+                                  }}
+                                />
+                                Option {String.fromCharCode(65+optIdx)} (correct)
+                              </label>
+                              <input 
+                                value={opt}
+                                onChange={(e)=>{
+                                  const newVars = [...newQuestion.variants];
+                                  newVars[idx].options[optIdx] = e.target.value;
+                                  setNewQuestion({...newQuestion, variants: newVars});
+                                }}
+                                placeholder={`Option ${String.fromCharCode(65+optIdx)}`}
+                                style={{width:'100%',padding:8,border:'1px solid #e5e7eb',borderRadius:6,fontSize:12,color:'#000',background:'#fff'}}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
+                    <button 
+                      onClick={()=>{setShowAddQuestion(false);setEditingQuestion(null);}}
+                      style={{padding:'12px 24px',background:'#fff',border:'1px solid #e5e7eb',borderRadius:8,cursor:'pointer',color:'#000'}}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={saveQuestion}
+                      style={{padding:'12px 24px',background:'#0d9488',border:'none',borderRadius:8,color:'#fff',cursor:'pointer',fontWeight:500}}
+                    >
+                      {editingQuestion ? 'Update Question' : 'Create Question'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

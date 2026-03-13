@@ -75,7 +75,12 @@ model Assessment {
   status          AssessmentStatus  @default(STARTED)
   
   // Intelligence Data (JSON)
-  intelligence    Json?            @default("{}")
+  intelligence      Json?            @default("{}")
+  intelligenceSource String?        @default("AI") // "AI", "Fallback", "Cached"
+  
+  // Report Caching
+  reportCached     Json?            @default("{}") // Cached successful report
+  reportSource     String?        @default("AI") // "AI", "Fallback", "Cached"
   
   // Question Variants
   variants        Json             @default("[]")
@@ -208,6 +213,40 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+}
+
+// ==================== QUESTION BANK MODELS ====================
+
+model Question {
+  id          String   @id @default(cuid())
+  dimension   Int      // 0-4 (AI Literacy, Data, Workflow, Governance, Strategic)
+  difficulty  String   // "easy", "medium", "hard"
+  tags        String[] // ["leadership", "technical", "compliance"]
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  variants    QuestionVariant[]
+
+  @@map("questions")
+}
+
+model QuestionVariant {
+  id            String   @id @default(cuid())
+  questionId    String   @map("question_id")
+  variantType   String   // "standard", "stretch", "diagnostic"
+  questionText  String   @map("question_text")
+  options       Json     // ["option A", "option B", "option C", "option D"]
+  correctAnswer Int?     @map("correct_answer") // Optional - for knowledge tests, not self-assessment
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  question      Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_variants")
 }
 
 // ==================== SETTINGS MODEL ====================

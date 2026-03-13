@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { generateWithFallback } from '@/lib/ai';
+import { getFallbackIntelligence } from '@/lib/fallback-intelligence';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { firstName, lastName, company, industry, jobTitle, seniority, department, country } = body;
+    const { firstName, lastName, company, industry, jobTitle, seniority, department, country, assessmentId } = body;
 
     if (!company || !industry) {
       return NextResponse.json({ error: 'Company and industry required' }, { status: 400 });
@@ -14,9 +16,37 @@ export async function POST(request: Request) {
     const userParts = [firstName, lastName].filter(Boolean).join(' ');
     const userContext = [userParts, jobTitle, seniority, department, company, industry, country].filter(Boolean).join(', ');
 
-    const simpleData: any = await generateWithFallback(userContext);
+    let simpleData: any;
+    let dataSource = 'AI';
     
-    console.log('Got data:', typeof simpleData, Array.isArray(simpleData));
+    try {
+      simpleData = await generateWithFallback(userContext);
+      console.log('Got data from AI:', typeof simpleData, typeof simpleData === 'string' ? simpleData.substring(0, 50) : '');
+      
+      // If AI returned string instead of object, try to parse or use fallback
+      if (typeof simpleData === 'string') {
+        console.log('AI returned string, attempting parse...');
+        try {
+          // Try to extract JSON from the string (might be wrapped in ```json)
+          const jsonMatch = simpleData.match(/```json\n?([\s\S]*?)\n?```/);
+          if (jsonMatch) {
+            simpleData = JSON.parse(jsonMatch[1]);
+            console.log('Parsed JSON from string');
+          } else {
+            simpleData = JSON.parse(simpleData);
+          }
+        } catch (parseErr) {
+          console.log('Could not parse string, using fallback');
+          simpleData = getFallbackIntelligence(company);
+          dataSource = 'Fallback';
+        }
+      }
+    } catch (aiError: any) {
+      console.error('AI generation failed:', aiError.message);
+      // Use fallback
+      simpleData = getFallbackIntelligence(company);
+      dataSource = 'Fallback';
+    }
     
     const categories = [
       'professionalProfile', 'companyOverview', 'companyAIPosture',
@@ -55,17 +85,47 @@ export async function POST(request: Request) {
         
         intelligence[cat] = {
           name: cat,
-          fields: [{ fieldName: 'Summary', fieldValue: String(fieldValue).substring(0, 250), source: 'AI Analysis' }],
-          sources: ['AI Analysis']
+          fields: [{ fieldName: 'Summary', fieldValue: String(fieldValue).substring(0, 250), source: dataSource + ' Analysis' }],
+          sources: [dataSource + ' Analysis']
         };
       }
     } else {
-      throw new Error('Invalid response');
+      // Use fallback if AI response is invalid
+      const fallback = getFallbackIntelligence(company);
+      Object.assign(intelligence, fallback);
+      dataSource = 'Fallback';
     }
     
-    return NextResponse.json(intelligence);
+    // Save to DB if assessmentId provided
+    if (assessmentId) {
+      try {
+        await prisma.assessment.update({
+          where: { id: assessmentId },
+          data: {
+            intelligence: intelligence,
+            intelligenceSource: dataSource
+          }
+        });
+      } catch (dbError) {
+        console.error('Failed to cache intelligence:', dbError);
+      }
+    }
+    
+    // Return with source indicator
+    return NextResponse.json({
+      intelligence,
+      dataSource,
+      timestamp: new Date().toISOString()
+    });
   } catch (error: any) {
     console.error('Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Return fallback on any error
+    const fallback = getFallbackIntelligence();
+    return NextResponse.json({
+      intelligence: fallback,
+      dataSource: 'Fallback',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 }
