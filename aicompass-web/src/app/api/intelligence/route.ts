@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateWithFallback } from '@/lib/ai';
 import { getFallbackIntelligence } from '@/lib/fallback-intelligence';
 import prisma from '@/lib/prisma';
+import { getCache, setCache } from '@/lib/cache';
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +12,21 @@ export async function POST(request: Request) {
     if (!company || !industry) {
       return NextResponse.json({ error: 'Company and industry required' }, { status: 400 });
     }
+
+    // Build cache key based on company + industry + country
+    const cacheKey = `intelligence:${company.toLowerCase()}:${industry.toLowerCase()}:${country?.toLowerCase() || 'unknown'}`;
+    
+    // Check cache first
+    const cachedData = await getCache<any>(cacheKey);
+    if (cachedData) {
+      console.log('[Cache] Intelligence cache hit for:', cacheKey);
+      return NextResponse.json({
+        ...cachedData,
+        dataSource: 'Cache',
+        cached: true,
+      });
+    }
+    console.log('[Cache] Intelligence cache miss for:', cacheKey);
 
     // Build user context
     const userParts = [firstName, lastName].filter(Boolean).join(' ');
@@ -111,12 +127,13 @@ export async function POST(request: Request) {
       }
     }
     
+    // Cache the result for 24 hours (86400 seconds)
+    const result = { intelligence, dataSource, timestamp: new Date().toISOString() };
+    await setCache(cacheKey, result, 86400);
+    console.log('[Cache] Cached intelligence for:', cacheKey);
+    
     // Return with source indicator
-    return NextResponse.json({
-      intelligence,
-      dataSource,
-      timestamp: new Date().toISOString()
-    });
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error:', error);
     // Return fallback on any error
