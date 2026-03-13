@@ -425,3 +425,25 @@ function generateNextSteps(dimensions: any[], gaps: any[], profile: any, respons
     `Schedule a follow-up assessment in 6 months to measure improvement and adjust strategy`,
   ];
 }
+
+function getBudgetRange(tier: string): string {
+  const ranges: Record<string, string> = {
+    'Beginner': '$50K - $150K',
+    'Developing': '$100K - $300K',
+    'Progressive': '$250K - $500K',
+    'Advanced': '$500K - $1M',
+    'Leading': '$1M - $3M+'
+  };
+  return ranges[tier] || '$100K - $300K';
+}
+
+function getBudgetNote(tier: string): string {
+  const notes: Record<string, string> = {
+    'Beginner': 'Focus on assessment, training, and 1-2 pilot projects. Start small with external advisory support.',
+    'Developing': 'Invest in foundational capabilities, data infrastructure, and initial AI projects.',
+    'Progressive': 'Build dedicated AI team, expand pilots to production, and scale successful initiatives.',
+    'Advanced': 'Enterprise-wide AI program with dedicated infrastructure and multi-year roadmap.',
+    'Leading': 'Full-scale AI transformation with significant R&D, talent acquisition, and innovation investment.'
+  };
+  return notes[tier] || 'Investment varies based on organisation size and scope.';
+}
