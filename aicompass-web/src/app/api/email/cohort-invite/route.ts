@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { sendEmail, getCohortInviteEmailHTML } from '@/lib/email';
+import { CohortInviteSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    
+    // Validate with Zod
+    const validation = CohortInviteSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Invalid data', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
     const { cohortId, emails, message } = body;
 
     if (!cohortId || !emails || !Array.isArray(emails) || emails.length === 0) {

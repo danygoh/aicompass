@@ -3,15 +3,27 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { sendEmail, getWelcomeEmailHTML, getAssessmentCompleteEmailHTML, getCohortInviteEmailHTML } from '@/lib/email';
+import { AssessmentSaveSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
+    // Validate input
+    const body = await request.json();
+    const validation = AssessmentSaveSchema.safeParse(body);
+    
+    if (!validation.success) {
+      console.error('Validation error:', validation.error.flatten());
+      return NextResponse.json(
+        { error: 'Invalid data', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     // For now, allow anonymous assessments (optional auth)
     let userId = session ? (session.user as any).id : null;
 
-    const body = await request.json();
     console.log('Save assessment request:', { userId, profile: body.profile?.company });
     
     const { 

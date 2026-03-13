@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { CohortValidateSchema } from '@/lib/validations';
 
 // Public endpoint to validate cohort code
 export async function GET(request: Request) {
@@ -7,8 +8,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
 
-    if (!code) {
-      return NextResponse.json({ valid: false, error: 'Code required' }, { status: 400 });
+    // Validate with Zod
+    const validation = CohortValidateSchema.safeParse({ code });
+    if (!validation.success) {
+      return NextResponse.json({ valid: false, error: 'Invalid code' }, { status: 400 });
     }
 
     const cohort = await prisma.cohort.findFirst({
