@@ -1,0 +1,12 @@
+# Robots.txt for AI Compass
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /dashboard
+
+# Sitemap
+Sitemap: https://aicompass.ainativefoundation.org/sitemap.xml
