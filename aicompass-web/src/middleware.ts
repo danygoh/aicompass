@@ -50,11 +50,10 @@ export function middleware(request: NextRequest) {
     }
 
     // Check auth rate limit
-    let authRecord = authRateLimitMap.get(clientIP);
-    if (!authRecord || now > authRecord.resetTime) {
-      authRecord = { count: 1, resetTime: now + WINDOW_MS };
-      authRateLimitMap.set(clientIP, authRecord);
-      return NextResponse.next();
+    let authRecord: { count: number; resetTime: number; lockedUntil?: number } = { count: 1, resetTime: now + WINDOW_MS };
+    const existingAuthRecord = authRateLimitMap.get(clientIP);
+    if (existingAuthRecord && now <= existingAuthRecord.resetTime) {
+      authRecord = existingAuthRecord;
     }
 
     // For failed login attempts (POST to signin), increment failure count
