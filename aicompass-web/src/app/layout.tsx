@@ -34,7 +34,6 @@ export const metadata: Metadata = {
   creator: "AI Native Foundation",
   publisher: "AI Native Foundation",
   metadataBase: new URL('https://aicompass.ainativefoundation.org'),
-  canonical: 'https://aicompass.ainativefoundation.org',
   openGraph: {
     type: 'website',
     locale: 'en_US',
