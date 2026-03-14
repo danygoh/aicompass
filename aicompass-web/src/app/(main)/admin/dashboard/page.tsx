@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
 
   const deleteUser = async (id: string) => {
     if (!confirm('Delete user?')) return;
-    await fetch('/api/admin/users/' + id, { method: 'DELETE' });
+    await fetch('/api/admin/users?id=' + id, { method: 'DELETE' });
     loadData();
   };
 
