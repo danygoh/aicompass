@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { auditLog } from '@/lib/audit';
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -129,6 +130,15 @@ export async function DELETE(request: Request) {
     // Delete user
     await prisma.user.delete({
       where: { id }
+    });
+
+    // Audit log
+    await auditLog({
+      action: 'USER_DELETED',
+      entityType: 'user',
+      entityId: id,
+      userId: (session.user as any)?.id,
+      userEmail: (session.user as any)?.email,
     });
 
     return NextResponse.json({ success: true });

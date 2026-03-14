@@ -261,3 +261,25 @@ model Settings {
 
   @@map("settings")
 }
+
+// ==================== AUDIT LOG MODEL ====================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // e.g., "USER_DELETE", "REPORT_VIEW", "LOGIN_SUCCESS"
+  entityType String?  // e.g., "user", "assessment", "cohort"
+  entityId   String?  @map("entity_id")
+  userId      String?  @map("user_id")
+  userEmail   String?  @map("user_email")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  metadata    Json?    // Additional details
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+
+  @@map("audit_logs")
+}

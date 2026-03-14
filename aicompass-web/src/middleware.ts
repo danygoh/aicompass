@@ -12,6 +12,9 @@ const AUTH_LIMIT = 10; // 10 attempts per minute for auth
 const AUTH_LOCKOUT_MS = 15 * 60 * 1000; // 15 minute lockout after 5 failures
 const WINDOW_MS = 60 * 1000; // 1 minute
 
+// Admin IP allowlist (set via environment variable, comma-separated)
+const ADMIN_IPS = process.env.ADMIN_ALLOWED_IPS?.split(',').map(ip => ip.trim()).filter(Boolean) || [];
+
 function getClientIP(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
     || request.headers.get('x-real-ip')
@@ -22,6 +25,17 @@ export function middleware(request: NextRequest) {
   const clientIP = getClientIP(request);
   const now = Date.now();
   const path = request.nextUrl.pathname;
+
+  // Phase 2: Admin IP Allowlist
+  if (path.startsWith('/api/admin/') && ADMIN_IPS.length > 0) {
+    if (!ADMIN_IPS.includes(clientIP) && !ADMIN_IPS.includes('*')) {
+      console.log(`[Security] Admin access denied from IP: ${clientIP}`);
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      );
+    }
+  }
 
   // Handle auth-specific rate limiting
   if (path.startsWith('/api/auth/')) {
