@@ -93,7 +93,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const record = rateLimitMap.get(clientIP);
+  const record = rateLimitMap.get(clientIP) || { count: 0, resetTime: 0 };
   
   if (!record || now > record.resetTime) {
     rateLimitMap.set(clientIP, { count: 1, resetTime: now + WINDOW_MS });
