@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Cache headers
       {
         source: '/:path*',
         headers: [
@@ -45,6 +46,17 @@ const nextConfig: NextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=604800, immutable',
           },
+        ],
+      },
+      // Security headers
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
     ];

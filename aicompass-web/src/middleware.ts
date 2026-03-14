@@ -4,9 +4,12 @@ import type { NextRequest } from 'next/server';
 // Simple in-memory rate limiter (for development)
 // For production, use @upstash/ratelimit with Redis
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const authRateLimitMap = new Map<string, { count: number; resetTime: number; lockedUntil?: number }>();
 
-// Config: 100 requests per minute
+// Config: 100 requests per minute for general API
 const LIMIT = 100;
+const AUTH_LIMIT = 10; // 10 attempts per minute for auth
+const AUTH_LOCKOUT_MS = 15 * 60 * 1000; // 15 minute lockout after 5 failures
 const WINDOW_MS = 60 * 1000; // 1 minute
 
 function getClientIP(request: NextRequest): string {
@@ -16,36 +19,80 @@ function getClientIP(request: NextRequest): string {
 }
 
 export function middleware(request: NextRequest) {
-  // Only rate limit API routes
-  if (!request.nextUrl.pathname.startsWith('/api/')) {
-    return NextResponse.next();
-  }
-
-  // Skip rate limiting for auth endpoints (they have their own handling)
-  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
-    return NextResponse.next();
-  }
-
   const clientIP = getClientIP(request);
   const now = Date.now();
-  
+  const path = request.nextUrl.pathname;
+
+  // Handle auth-specific rate limiting
+  if (path.startsWith('/api/auth/')) {
+    // Check if locked out
+    const authRecord = authRateLimitMap.get(clientIP);
+    if (authRecord?.lockedUntil && now < authRecord.lockedUntil) {
+      const remainingSeconds = Math.ceil((authRecord.lockedUntil - now) / 1000);
+      return NextResponse.json(
+        { error: 'Account locked', message: `Too many failed attempts. Try again in ${remainingSeconds} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(remainingSeconds) } }
+      );
+    }
+
+    // Check auth rate limit
+    let authRecord = authRateLimitMap.get(clientIP);
+    if (!authRecord || now > authRecord.resetTime) {
+      authRecord = { count: 1, resetTime: now + WINDOW_MS };
+      authRateLimitMap.set(clientIP, authRecord);
+      return NextResponse.next();
+    }
+
+    // For failed login attempts (POST to signin), increment failure count
+    if (path.includes('signin') && request.method === 'POST') {
+      authRecord.count++;
+      
+      // Lock out after 5 failed attempts
+      if (authRecord.count > 5) {
+        authRecord.lockedUntil = now + AUTH_LOCKOUT_MS;
+        authRateLimitMap.set(clientIP, authRecord);
+        return NextResponse.json(
+          { error: 'Account locked', message: 'Too many failed login attempts. Try again in 15 minutes.' },
+          { status: 429 }
+        );
+      }
+      
+      authRateLimitMap.set(clientIP, authRecord);
+    }
+
+    // Allow up to AUTH_LIMIT requests per minute
+    if (authRecord.count >= AUTH_LIMIT) {
+      return NextResponse.json(
+        { error: 'Too many requests', message: `Max ${AUTH_LIMIT} auth attempts per minute.` },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((authRecord.resetTime - now) / 1000)) } }
+      );
+    }
+    
+    authRecord.count++;
+    authRateLimitMap.set(clientIP, authRecord);
+    
+    return NextResponse.next();
+  }
+
+  // General API rate limiting
+  if (!path.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
   const record = rateLimitMap.get(clientIP);
   
   if (!record || now > record.resetTime) {
-    // New window
     rateLimitMap.set(clientIP, { count: 1, resetTime: now + WINDOW_MS });
     return NextResponse.next();
   }
   
   if (record.count >= LIMIT) {
-    // Rate limited
     return NextResponse.json(
       { error: 'Too many requests', message: `Rate limit exceeded. Max ${LIMIT} requests per minute.` },
       { status: 429, headers: { 'Retry-After': String(Math.ceil((record.resetTime - now) / 1000)) } }
     );
   }
   
-  // Increment count
   record.count++;
   rateLimitMap.set(clientIP, record);
   
@@ -53,5 +100,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: ['/api/:path*', '/api/auth/:path*'],
 };
