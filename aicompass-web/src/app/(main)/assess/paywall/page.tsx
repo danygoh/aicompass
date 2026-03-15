@@ -230,37 +230,23 @@ export default function PaywallPage() {
           </div>
         )}
 
-        {/* Payment Form (simplified) */}
+        {/* Payment Button - Airwallex */}
         {selectedPlan === 'professional' && (
-          <div className="pw-pay-form">
-            <div className="pw-form-title">Payment Details</div>
-            <div className="pw-form-sub">Secure checkout · $199 one-time</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input className="pw-fi" type="text" placeholder="Name on card" />
-              <input className="pw-fi" type="email" placeholder="Email address" defaultValue={profile.email} />
-              <input className="pw-fi" type="text" placeholder="Card number" maxLength={19} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <input className="pw-fi" type="text" placeholder="MM / YY" maxLength={7} />
-                <input className="pw-fi" type="text" placeholder="CVC" maxLength={4} />
-              </div>
-            </div>
-            <div className="pw-secure-note">🔒 Payments processed by Stripe · 256-bit SSL · PCI compliant</div>
+          <div className="pw-pay-form" style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>$199 one-time payment</div>
             <button 
               className="btn-pay" 
               id="btn-pay-now" 
-              style={{ marginTop: '16px' }}
-              onClick={handleUnlock}
-              disabled={processing}
+              style={{ marginTop: '16px', padding: '14px 40px', fontSize: '16px' }}
+              onClick={() => window.location.href = 'https://pay.airwallex.com/hkhgnpzy47hf'}
             >
-              {processing ? 'Processing...' : 'Unlock My Report — $199 →'}
+              Continue to Payment →
             </button>
+            <div style={{ marginTop: '16px', fontSize: '11px', color: '#999' }}>🔒 Secure payment by Airwallex</div>
           </div>
         )}
 
-        {/* Demo Note */}
-        <div className="pw-demo-note">
-          <button className="btn-demo-unlock" onClick={handleDemo}>Preview demo report (no payment) →</button>
-        </div>
+        {/* Back to home */}
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
           <button 
             className="btn-demo-unlock" 
