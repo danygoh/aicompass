@@ -23,7 +23,7 @@ const DimensionScoreSchema = z.object({
 // Assessment save validation schema
 export const AssessmentSaveSchema = z.object({
   profile: ProfileSchema,
-  responses: z.array(z.number().min(1).max(5)).length(25, 'Must answer all 25 questions'),
+  responses: z.array(z.number().min(0).max(4)).length(25, 'Must answer all 25 questions'),
   totalScore: z.number().min(0).max(100),
   tier: z.string().max(50),
   dimensionScores: z.array(DimensionScoreSchema).optional(),
