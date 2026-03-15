@@ -233,7 +233,6 @@ export default function PaywallPage() {
         {/* Payment Button - Airwallex */}
         {selectedPlan === 'professional' && (
           <div className="pw-pay-form" style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>$199 one-time payment</div>
             <button 
               className="btn-pay" 
               id="btn-pay-now" 
