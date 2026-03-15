@@ -353,6 +353,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
             <a href="/privacy" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Privacy Policy</a>
             <a href="/terms" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Terms of Service</a>
+            <a href="/auth/magic" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Access Report</a>
             <a href="mailto:support@ainativefoundation.org" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 13 }}>Contact</a>
           </div>
         </div>
