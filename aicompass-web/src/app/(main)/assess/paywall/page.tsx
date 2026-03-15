@@ -31,10 +31,13 @@ export default function PaywallPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile,
-          responses,
+          responses: (responses || []).map((r: number) => r || 1),
           intelligence,
           totalScore: totalScore || 0,
-          dimensionScores: dimensionScores || [0, 0, 0, 0, 0],
+          dimensionScores: (dimensionScores || [0, 0, 0, 0, 0]).map((score, idx) => ({
+            dimension: ['AI Literacy', 'Data Readiness', 'Workflow Integration', 'Governance & Risk', 'Strategic Alignment'][idx] || `Dimension ${idx + 1}`,
+            score: score || 0,
+          })),
           tier: tierName,
           reportId: `AIC-${Date.now()}`,
         }),
