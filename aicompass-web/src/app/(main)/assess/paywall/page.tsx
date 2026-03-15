@@ -31,7 +31,7 @@ export default function PaywallPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile,
-          responses: (responses || []).map((r) => (r || 1)),
+          responses: (responses || []).map((r) => (r || 0) + 1),
           intelligence,
           totalScore: totalScore || 0,
           dimensionScores: (dimensionScores || [0, 0, 0, 0, 0]).map((score, idx) => ({
