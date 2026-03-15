@@ -378,10 +378,10 @@ export default function AdminDashboardPage() {
   <meta charset="UTF-8">
   <title>AI Compass Report - ${report.userName}</title>
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e3a5f; line-height: 1.6; }
-    h1 { color: #1e3a5f; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #000; line-height: 1.6; }
+    h1 { color: #000; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; }
     h2 { color: #0d9488; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
-    h3 { color: #1e3a5f; margin-top: 20px; }
+    h3 { color: #000; margin-top: 20px; }
     .score { font-size: 64px; font-weight: bold; color: #f59e0b; }
     .score-label { font-size: 14px; color: #6b7280; }
     .tier { display: inline-block; background: #f0fdfa; color: #0d9488; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; }
@@ -496,7 +496,7 @@ export default function AdminDashboardPage() {
   return (
     <div style={{display:'flex',minHeight:'100vh'}}>
       <aside style={{width:260,background:'#fff',borderRight:'1px solid #e5e7eb',padding:20,display:'flex',flexDirection:'column'}}>
-        <div style={{fontFamily:'Fraunces, serif',fontSize:18,color:'#1e3a5f'}}>AI <span style={{color:'#f59e0b'}}>Compass</span></div>
+        <div style={{fontFamily:'Fraunces, serif',fontSize:18,color:'#000'}}>AI <span style={{color:'#f59e0b'}}>Compass</span></div>
         <div style={{fontSize:11,color:'#6b7280',marginTop:4,marginBottom:20}}>Admin Dashboard</div>
         <nav style={{flex:1}}>
           {[
@@ -520,7 +520,7 @@ export default function AdminDashboardPage() {
       </aside>
 
       <div style={{flex:1,padding:24,background:'#f9fafb',overflowY:'auto'}}>
-        <h1 style={{fontSize:24,fontWeight:600,color:'#1e3a5f',margin:0,marginBottom:24}}>
+        <h1 style={{fontSize:24,fontWeight:600,color:'#000',margin:0,marginBottom:24}}>
           {activePanel==='overview'&&'Overview'}
           {activePanel==='users'&&'Clients'}
           {activePanel==='admins'&&'Admins'}
